@@ -39,7 +39,9 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	mep.bsEngine = bitswapEngine
 
 	// Create a wiretap instance
-	bswt := BitSwapWireTap{}
+	bswt := BitSwapWireTap{
+		api: ipfsInstance,
+	}
 	optFunc := bs.EnableWireTap(bswt)
 	optFunc(bitswapEngine)
 	// go cp.forkToBackground()
