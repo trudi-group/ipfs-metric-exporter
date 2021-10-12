@@ -5,6 +5,7 @@ import (
 
 	bsmsg "github.com/ipfs/go-bitswap/message"
 	core "github.com/ipfs/go-ipfs/core"
+	"github.com/libp2p/go-libp2p-core/network"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 )
@@ -24,5 +25,30 @@ func (bwt BitSwapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage)
 }
 
 func (BitSwapWireTap) MessageSent(pid peer.ID, msg bsmsg.BitSwapMessage) {
-	// Do nothing
+	// NOP
+}
+
+// Implement the network notifee interface
+func (BitSwapWireTap) Listen(nw network.Network, ma ma.Multiaddr) {
+	// NOP
+}
+
+func (BitSwapWireTap) ListenClose(nw network.Network, ma ma.Multiaddr) {
+	// NOP
+}
+
+func (BitSwapWireTap) Connected(nw network.Network, conn network.Conn) {
+	fmt.Printf("Connection event for PID: %s, Addr: %s\n", conn.RemotePeer(), conn.RemoteMultiaddr())
+}
+
+func (BitSwapWireTap) Disconnected(nw network.Network, conn network.Conn) {
+	fmt.Printf("Disconnection event for PID: %s, Addr: %s\n", conn.RemotePeer(), conn.RemoteMultiaddr())
+}
+
+func (BitSwapWireTap) OpenedStream(nw network.Network, s network.Stream) {
+	// NOP
+}
+
+func (BitSwapWireTap) ClosedStream(nw network.Network, s network.Stream) {
+	// NOP
 }

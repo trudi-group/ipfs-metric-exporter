@@ -44,6 +44,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	}
 	optFunc := bs.EnableWireTap(bswt)
 	optFunc(bitswapEngine)
-	// go cp.forkToBackground()
+
+	ipfsInstance.PeerHost.Network().Notify(bswt)
 	return nil
 }
