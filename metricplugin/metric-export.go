@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	bs "github.com/ipfs/go-bitswap"
 	core "github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/prometheus/client_golang/prometheus"
+)
+
+const (
+	pollInterval = 10 * time.Second
 )
 
 type MetricExporterPlugin struct {
@@ -40,6 +45,8 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 
 	// Register metrics
 	prometheus.Register(trafficByGateway)
+	prometheus.Register(dhtEnabledPeers)
+	prometheus.Register(agentVersionCount)
 
 	// Get the bitswap instance from the interface
 	mep.api = ipfsInstance
@@ -64,6 +71,8 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	// TODO: For some reason this breaks everything and leads to a deadlock
 	//ipfsInstance.PeerHost.Network().Notify(bswt)
 
+	// Fork to background
+	go bswt.MainLoop()
 	return nil
 }
 
