@@ -2,6 +2,7 @@ package metricplugin
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,12 @@ const (
 type MetricExporterPlugin struct {
 	api      *core.IpfsNode
 	bsEngine *bs.Bitswap
+	conf     Config
+}
+
+// Config contains all values configurated via the standard IPFS config section on plugins.
+type Config struct {
+	QueryPeerListIntervalSeconds int `json:"QueryPeerListIntervalSeconds"`
 }
 
 var gwFilePath = "gateway_list.csv"
@@ -46,7 +53,21 @@ func (*MetricExporterPlugin) Version() string {
 
 // Init initializes this plugin with the given environment.
 // This is part of the `plugin.Plugin` interface.
-func (*MetricExporterPlugin) Init(*plugin.Environment) error {
+func (mep *MetricExporterPlugin) Init(env *plugin.Environment) error {
+	// Populate the config
+	jconf, err := json.Marshal(env.Config)
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal plugin config to JSON")
+	}
+
+	var pConf Config
+	err = json.Unmarshal(jconf, &pConf)
+	if err != nil {
+		return errors.Wrap(err, "unable to unmarshal plugin config from JSON")
+	}
+
+	mep.conf = pConf
+
 	return nil
 }
 
@@ -86,7 +107,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	// ipfsInstance.PeerHost.Network().Notify(bswt)
 
 	// Periodically populate Prometheus with metrics about peer counts.
-	go mep.populatePromPeerCountLoop(pollInterval)
+	go mep.populatePromPeerCountLoop(time.Duration(mep.conf.QueryPeerListIntervalSeconds) * time.Second)
 
 	return nil
 }
