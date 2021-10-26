@@ -63,11 +63,13 @@ func (bwt *BitSwapWireTap) MainLoop() {
 		dhtEnabledPeers.With(prometheus.Labels{"dht_enabled": "no"}).Set(dht_disabled)
 
 		// ad (2)
-		// TODO: Alternatively solve this via the connection events -- if we have the peer store entry then already.
-		// It could be the case that the ID protocol has not finished when we receive the connection event
+		// One could alternatively solve this via the connection events -- if we have the peer store entry then already.
+		// It could be the case that the ID protocol has not finished when we receive the connection event.
+		// -> After talking to mxinden it is definitely the case that the ID protocol will not have finished
 		agentVersionCount.Reset()
+		connectedPeers := bwt.api.PeerHost.Network().Peers()
 
-		for _, p := range bwt.api.PeerHost.Network().Peers() {
+		for _, p := range connectedPeers {
 			var av string
 			agentVersion, err := bwt.api.PeerHost.Peerstore().Get(p, "AgentVersion")
 			if err == nil {
