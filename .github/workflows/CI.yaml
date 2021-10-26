@@ -1,0 +1,95 @@
+name: CI
+on:
+  # See the documentation for more intricate event dispatch here:
+  # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#on
+  push:
+    branches:
+    - "!dependabot/*"
+    - "*"
+  pull_request:
+    branches:
+    - "*"
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ipfs-metrics-plugin
+    steps:
+    - name: Checkout Plugin Source
+      uses: actions/checkout@v2
+      with:
+        path: ipfs-metrics-plugin
+    - name: Checkout go-ipfs Source
+      uses: actions/checkout@v2
+      with:
+        repository: mrd0ll4r/go-ipfs
+        ref: replace-bitswap
+        path: go-ipfs
+    - name: Checkout go-bitswap Source
+      uses: actions/checkout@v2
+      with:
+        repository: mrd0ll4r/go-bitswap
+        ref: wantlist-logging
+        path: go-bitswap
+    - name: Setup
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+    - name: Tidy
+      run: |
+        GO_MOD_OUPUT="$(go mod tidy -v 2>&1)"
+        if [[ $GO_MOD_OUPUT == *"unused"* ]]; then
+          echo "${GO_MOD_OUPUT}"
+          exit 1
+        fi
+    - name: Format
+      run: |
+        go install mvdan.cc/gofumpt/gofumports@latest
+        GOFUMPT_OUTPUT="$(gofumports -d .)"
+        if [ -n "$GOFUMPT_OUTPUT" ]; then
+          echo "All the following files are not correctly formatted"
+          echo "${GOFUMPT_OUTPUT}"
+          exit 1
+        fi
+    - name: Lint
+      run: |
+        go install github.com/mgechev/revive@latest
+        REVIVE_OUTPUT="$(revive ./...)"
+        if [ -n "$REVIVE_OUTPUT" ]; then
+          echo "${REVIVE_OUTPUT}"
+          exit 1
+        fi
+    - name: Build
+      run: go build -v -buildmode=plugin -o mexport.so main.go
+
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ipfs-metrics-plugin
+    steps:
+    - name: Checkout Plugin Source
+      uses: actions/checkout@v2
+      with:
+        path: ipfs-metrics-plugin
+    - name: Checkout go-ipfs Source
+      uses: actions/checkout@v2
+      with:
+        repository: mrd0ll4r/go-ipfs
+        ref: replace-bitswap
+        path: go-ipfs
+    - name: Checkout go-bitswap Source
+      uses: actions/checkout@v2
+      with:
+        repository: mrd0ll4r/go-bitswap
+        ref: wantlist-logging
+        path: go-bitswap
+    - name: Setup
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+    - name: Unit Tests
+      run: go test -v -race $(go list ./...)
