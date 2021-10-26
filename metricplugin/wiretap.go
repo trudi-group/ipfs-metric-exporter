@@ -36,7 +36,7 @@ func streamsContainKad(streams []network.Stream) bool {
 }
 
 func (bwt *BitSwapWireTap) MainLoop() {
-	pollticker := time.NewTicker(bwt.config.pollInterval)
+	pollticker := time.NewTicker(bwt.config.PollInterval.Duration)
 
 	for {
 		// Every time the ticker fires we return

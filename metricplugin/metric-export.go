@@ -2,7 +2,10 @@ package metricplugin
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -19,8 +22,39 @@ const (
 	pollInterval = 10 * time.Second
 )
 
+// Go does not support directly marshalling the duration from the json config to time.Duration.
+// Alternatively, one could do this in a UnmarshalJSON-Method of the config struct itself
+type Duration struct {
+	time.Duration
+}
+
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case float64:
+		d.Duration = time.Duration(value)
+		return nil
+	case string:
+		var err error
+		d.Duration, err = time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid duration")
+	}
+}
+
 type MExporterConfig struct {
-	pollInterval time.Duration
+	PollInterval Duration
 }
 
 type MetricExporterPlugin struct {
@@ -51,15 +85,18 @@ func parseConfig(ipfsconf *config.Config) *MExporterConfig {
 
 	// Get the key-value mapping of config values and cycle through each element
 	pluginConfMap := ipfsconf.Plugins.Plugins["metric-export-plugin"].Config.(map[string]interface{})
-	pinv, err := time.ParseDuration(pluginConfMap["pollInterval"].(string))
+	jconf, err := json.Marshal(pluginConfMap)
 	if err != nil {
-		pinv = pollInterval
+		log.Fatal(err)
 	}
-	fmt.Printf("Poll interval set to %s\n", pinv)
 
-	return &MExporterConfig{
-		pollInterval: pinv,
+	var pConf MExporterConfig
+	err = json.Unmarshal(jconf, &pConf)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	return &pConf
 }
 
 func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
@@ -68,7 +105,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	// Load config file
 	ipfsconf, err := ipfsInstance.Repo.Config()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	pluginConf := parseConfig(ipfsconf)
 
