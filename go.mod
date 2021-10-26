@@ -10,4 +10,4 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 )
 
-replace github.com/ipfs/go-ipfs => /home/sebi/blockchain/ipfs/go-ipfs/
+replace github.com/ipfs/go-ipfs => ../go-ipfs/
