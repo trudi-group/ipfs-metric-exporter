@@ -20,6 +20,7 @@ const (
 type BitSwapWireTap struct {
 	api        *core.IpfsNode
 	gatewayMap map[peer.ID]string
+	config     *MExporterConfig
 }
 
 func streamsContainKad(streams []network.Stream) bool {
@@ -35,7 +36,7 @@ func streamsContainKad(streams []network.Stream) bool {
 }
 
 func (bwt *BitSwapWireTap) MainLoop() {
-	pollticker := time.NewTicker(pollInterval)
+	pollticker := time.NewTicker(bwt.config.pollInterval)
 
 	for {
 		// Every time the ticker fires we return

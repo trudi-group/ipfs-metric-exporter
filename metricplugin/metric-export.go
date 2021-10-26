@@ -8,6 +8,7 @@ import (
 	"time"
 
 	bs "github.com/ipfs/go-bitswap"
+	config "github.com/ipfs/go-ipfs-config"
 	core "github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 	peer "github.com/libp2p/go-libp2p-core/peer"
@@ -17,6 +18,10 @@ import (
 const (
 	pollInterval = 10 * time.Second
 )
+
+type MExporterConfig struct {
+	pollInterval time.Duration
+}
 
 type MetricExporterPlugin struct {
 	api      *core.IpfsNode
@@ -40,8 +45,32 @@ func (*MetricExporterPlugin) Init(env *plugin.Environment) error {
 	return nil
 }
 
+func parseConfig(ipfsconf *config.Config) *MExporterConfig {
+	// ToDo: Actually use the value if the plugin is enabled and do stuff about it
+	// pluginConfDisabled := ipfsconf.Plugins.Plugins["metric-export-plugin"].Disabled
+
+	// Get the key-value mapping of config values and cycle through each element
+	pluginConfMap := ipfsconf.Plugins.Plugins["metric-export-plugin"].Config.(map[string]interface{})
+	pinv, err := time.ParseDuration(pluginConfMap["pollInterval"].(string))
+	if err != nil {
+		pinv = pollInterval
+	}
+	fmt.Printf("Poll interval set to %s\n", pinv)
+
+	return &MExporterConfig{
+		pollInterval: pinv,
+	}
+}
+
 func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	fmt.Println("Metric Export Plugin started")
+
+	// Load config file
+	ipfsconf, err := ipfsInstance.Repo.Config()
+	if err != nil {
+		panic(err)
+	}
+	pluginConf := parseConfig(ipfsconf)
 
 	// Register metrics
 	prometheus.Register(trafficByGateway)
@@ -63,6 +92,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	bswt := BitSwapWireTap{
 		api:        ipfsInstance,
 		gatewayMap: gwMap,
+		config:     pluginConf,
 	}
 
 	optFunc := bs.EnableWireTap(bswt)
