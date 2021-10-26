@@ -24,9 +24,9 @@ type BitswapWireTap struct {
 	gatewayMap map[peer.ID]string
 }
 
-func (bwt BitswapWireTap) prometheusRecordMessageReceived(pid peer.ID) {
+func (wt *BitswapWireTap) prometheusRecordMessageReceived(pid peer.ID) {
 	// Get the gateway from the corresponding map
-	if val, ok := bwt.gatewayMap[pid]; ok {
+	if val, ok := wt.gatewayMap[pid]; ok {
 		trafficByGateway.With(prometheus.Labels{"gateway": val}).Inc()
 	} else {
 		trafficByGateway.With(prometheus.Labels{"gateway": "homegrown"}).Inc()
@@ -34,8 +34,8 @@ func (bwt BitswapWireTap) prometheusRecordMessageReceived(pid peer.ID) {
 }
 
 // MessageReceived is called on incoming Bitswap messages.
-func (bwt BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage) {
-	/* 	conns := bwt.api.PeerHost.Network().ConnsToPeer(pid)
+func (wt *BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage) {
+	/* 	conns := wt.api.PeerHost.Network().ConnsToPeer(pid)
 	   	// Unpack the multiaddresses
 	   	var mas []ma.Multiaddr
 	   	for _, c := range conns {
@@ -43,7 +43,7 @@ func (bwt BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage)
 	   	}
 	   	fmt.Printf("Received msg from %s with multiaddrs: %s \n", pid, mas) */
 
-	bwt.prometheusRecordMessageReceived(pid)
+	wt.prometheusRecordMessageReceived(pid)
 
 	// Process incoming bsmsg for prometheus metrics. In particular we want to
 	// extract whether a received message originated from a gateway or not
@@ -51,30 +51,30 @@ func (bwt BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage)
 
 // MessageSent is called on outgoing Bitswap messages.
 // We do not use this at the moment.
-func (BitswapWireTap) MessageSent(pid peer.ID, msg bsmsg.BitSwapMessage) {}
+func (*BitswapWireTap) MessageSent(pid peer.ID, msg bsmsg.BitSwapMessage) {}
 
 // Listen is called when the network implementation starts listening on the given address.
 // We do not use this at the moment.
-func (BitswapWireTap) Listen(nw network.Network, ma ma.Multiaddr) {}
+func (*BitswapWireTap) Listen(nw network.Network, ma ma.Multiaddr) {}
 
 // ListenClose is called when the network implementation stops listening on the given address.
 // We do not use this at the moment.
-func (BitswapWireTap) ListenClose(nw network.Network, ma ma.Multiaddr) {}
+func (*BitswapWireTap) ListenClose(nw network.Network, ma ma.Multiaddr) {}
 
 // Connected is called when a connection is opened.
-func (BitswapWireTap) Connected(nw network.Network, conn network.Conn) {
+func (*BitswapWireTap) Connected(nw network.Network, conn network.Conn) {
 	fmt.Printf("Connection event for PID: %s, Addr: %s\n", conn.RemotePeer(), conn.RemoteMultiaddr())
 }
 
 // Disconnected is called when a connection is closed.
-func (BitswapWireTap) Disconnected(nw network.Network, conn network.Conn) {
+func (*BitswapWireTap) Disconnected(nw network.Network, conn network.Conn) {
 	fmt.Printf("Disconnection event for PID: %s, Addr: %s\n", conn.RemotePeer(), conn.RemoteMultiaddr())
 }
 
 // OpenedStream is called when a stream has been opened.
 // We do not use this at the moment.
-func (BitswapWireTap) OpenedStream(nw network.Network, s network.Stream) {}
+func (*BitswapWireTap) OpenedStream(nw network.Network, s network.Stream) {}
 
 // ClosedStream is called when a stream has been closed.
 // We do not use this at the moment.
-func (BitswapWireTap) ClosedStream(nw network.Network, s network.Stream) {}
+func (*BitswapWireTap) ClosedStream(nw network.Network, s network.Stream) {}
