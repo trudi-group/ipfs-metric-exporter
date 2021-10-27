@@ -10,5 +10,3 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 )
-
-replace github.com/ipfs/go-ipfs => ../go-ipfs/

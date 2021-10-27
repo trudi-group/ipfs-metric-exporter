@@ -57,7 +57,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 
 	// Register metrics
 	prometheus.MustRegister(trafficByGateway)
-	prometheus.MustRegister(dhtEnabledPeers)
+	prometheus.Register(dhtEnabledPeers)
 	prometheus.MustRegister(agentVersionCount)
 
 	// Get the bitswap instance from the interface
