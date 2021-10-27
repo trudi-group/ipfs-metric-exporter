@@ -13,26 +13,9 @@ jobs:
   build:
     name: Build & Lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ipfs-metrics-plugin
     steps:
-    - name: Checkout Plugin Source
+    - name: Checkout
       uses: actions/checkout@v2
-      with:
-        path: ipfs-metrics-plugin
-    - name: Checkout go-ipfs Source
-      uses: actions/checkout@v2
-      with:
-        repository: mrd0ll4r/go-ipfs
-        ref: replace-bitswap
-        path: go-ipfs
-    - name: Checkout go-bitswap Source
-      uses: actions/checkout@v2
-      with:
-        repository: mrd0ll4r/go-bitswap
-        ref: wantlist-logging
-        path: go-bitswap
     - name: Setup
       uses: actions/setup-go@v2
       with:
@@ -49,44 +32,26 @@ jobs:
         go install mvdan.cc/gofumpt/gofumports@latest
         GOFUMPT_OUTPUT="$(gofumports -d .)"
         if [ -n "$GOFUMPT_OUTPUT" ]; then
-          echo "All the following files are not correctly formatted"
           echo "${GOFUMPT_OUTPUT}"
           exit 1
         fi
     - name: Lint
       run: |
         go install github.com/mgechev/revive@latest
-        REVIVE_OUTPUT="$(revive ./...)"
+        REVIVE_OUTPUT="$(revive -config .github/workflows/revive.toml ./...)"
         if [ -n "$REVIVE_OUTPUT" ]; then
           echo "${REVIVE_OUTPUT}"
           exit 1
         fi
     - name: Build
-      run: go build -v -buildmode=plugin -o mexport.so main.go
+      run: go build -v -buildmode=plugin -o mexport.so
 
   unit:
     name: Unit Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ipfs-metrics-plugin
     steps:
-    - name: Checkout Plugin Source
+    - name: Checkout
       uses: actions/checkout@v2
-      with:
-        path: ipfs-metrics-plugin
-    - name: Checkout go-ipfs Source
-      uses: actions/checkout@v2
-      with:
-        repository: mrd0ll4r/go-ipfs
-        ref: replace-bitswap
-        path: go-ipfs
-    - name: Checkout go-bitswap Source
-      uses: actions/checkout@v2
-      with:
-        repository: mrd0ll4r/go-bitswap
-        ref: wantlist-logging
-        path: go-bitswap
     - name: Setup
       uses: actions/setup-go@v2
       with:

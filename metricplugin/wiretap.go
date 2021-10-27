@@ -34,7 +34,7 @@ func (wt *BitswapWireTap) prometheusRecordMessageReceived(pid peer.ID) {
 }
 
 // MessageReceived is called on incoming Bitswap messages.
-func (wt *BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage) {
+func (wt *BitswapWireTap) MessageReceived(pid peer.ID, _ bsmsg.BitSwapMessage) {
 	/* 	conns := wt.api.PeerHost.Network().ConnsToPeer(pid)
 	   	// Unpack the multiaddresses
 	   	var mas []ma.Multiaddr
@@ -51,30 +51,30 @@ func (wt *BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage)
 
 // MessageSent is called on outgoing Bitswap messages.
 // We do not use this at the moment.
-func (*BitswapWireTap) MessageSent(pid peer.ID, msg bsmsg.BitSwapMessage) {}
+func (*BitswapWireTap) MessageSent(peer.ID, bsmsg.BitSwapMessage) {}
 
 // Listen is called when the network implementation starts listening on the given address.
 // We do not use this at the moment.
-func (*BitswapWireTap) Listen(nw network.Network, ma ma.Multiaddr) {}
+func (*BitswapWireTap) Listen(network.Network, ma.Multiaddr) {}
 
 // ListenClose is called when the network implementation stops listening on the given address.
 // We do not use this at the moment.
-func (*BitswapWireTap) ListenClose(nw network.Network, ma ma.Multiaddr) {}
+func (*BitswapWireTap) ListenClose(network.Network, ma.Multiaddr) {}
 
 // Connected is called when a connection is opened.
-func (*BitswapWireTap) Connected(nw network.Network, conn network.Conn) {
+func (*BitswapWireTap) Connected(_ network.Network, conn network.Conn) {
 	fmt.Printf("Connection event for PID: %s, Addr: %s\n", conn.RemotePeer(), conn.RemoteMultiaddr())
 }
 
 // Disconnected is called when a connection is closed.
-func (*BitswapWireTap) Disconnected(nw network.Network, conn network.Conn) {
+func (*BitswapWireTap) Disconnected(_ network.Network, conn network.Conn) {
 	fmt.Printf("Disconnection event for PID: %s, Addr: %s\n", conn.RemotePeer(), conn.RemoteMultiaddr())
 }
 
 // OpenedStream is called when a stream has been opened.
 // We do not use this at the moment.
-func (*BitswapWireTap) OpenedStream(nw network.Network, s network.Stream) {}
+func (*BitswapWireTap) OpenedStream(network.Network, network.Stream) {}
 
 // ClosedStream is called when a stream has been closed.
 // We do not use this at the moment.
-func (*BitswapWireTap) ClosedStream(nw network.Network, s network.Stream) {}
+func (*BitswapWireTap) ClosedStream(network.Network, network.Stream) {}
