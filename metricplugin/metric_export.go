@@ -46,7 +46,7 @@ func (*MetricExporterPlugin) Version() string {
 
 // Init initializes this plugin with the given environment.
 // This is part of the `plugin.Plugin` interface.
-func (*MetricExporterPlugin) Init(env *plugin.Environment) error {
+func (*MetricExporterPlugin) Init(*plugin.Environment) error {
 	return nil
 }
 
@@ -57,7 +57,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 
 	// Register metrics
 	prometheus.MustRegister(trafficByGateway)
-	prometheus.Register(dhtEnabledPeers)
+	prometheus.MustRegister(dhtEnabledPeers)
 	prometheus.MustRegister(agentVersionCount)
 
 	// Get the bitswap instance from the interface
