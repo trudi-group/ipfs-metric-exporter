@@ -38,3 +38,7 @@ to increase the limit of file descriptors for the IPFS daemon.
 The IPFS daemon attempts to do this on its own, but only up to 8192 FDs by default.
 This is controllable via the `IPFS_FD_MAX` environment variable.
 Setting `IPFS_FD_MAX="100000"` should be sufficient.
+
+## License
+
+MIT, see [LICENSE](./LICENSE).
