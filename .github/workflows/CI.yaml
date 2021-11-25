@@ -29,8 +29,8 @@ jobs:
         fi
     - name: Format
       run: |
-        go install mvdan.cc/gofumpt/gofumports@latest
-        GOFUMPT_OUTPUT="$(gofumports -d .)"
+        go install mvdan.cc/gofumpt@latest
+        GOFUMPT_OUTPUT="$(gofumpt -d .)"
         if [ -n "$GOFUMPT_OUTPUT" ]; then
           echo "${GOFUMPT_OUTPUT}"
           exit 1
