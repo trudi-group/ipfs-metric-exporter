@@ -149,7 +149,7 @@ type versionMessage struct {
 }
 
 // The version of this server.
-const serverVersion uint16 = 1
+const serverVersion uint16 = 2
 
 // Handshake performs a rudimentary handshake.
 // A JSON-encoded, length delimited version message is exchanged in both
@@ -261,7 +261,7 @@ func (c *tcpClient) run() {
 				if err != nil {
 					errMsg = err.Error()
 				}
-				outMsg.Response.Subscribe = &subscribeResponse{Error: errMsg}
+				outMsg.Response.Subscribe = &subscribeResponse{Error: &errMsg}
 			} else if msg.Request.Unsubscribe != nil {
 				c.plugin.Unsubscribe(c)
 				outMsg.Response.Unsubscribe = &unsubscribeResponse{}
@@ -377,7 +377,7 @@ type response struct {
 
 type subscribeResponse struct {
 	// Propagates the error in string representation from the Subscribe method.
-	Error string `json:"error"`
+	Error *string `json:"error,omitempty"`
 }
 
 type unsubscribeResponse struct{}

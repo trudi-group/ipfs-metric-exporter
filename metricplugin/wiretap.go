@@ -6,9 +6,11 @@ import (
 
 	"github.com/ipfs/go-bitswap"
 	bsmsg "github.com/ipfs/go-bitswap/message"
-	core "github.com/ipfs/go-ipfs/core"
+	pbmsg "github.com/ipfs/go-bitswap/message/pb"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/go-ipfs/core"
 	"github.com/libp2p/go-libp2p-core/network"
-	peer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -73,9 +75,35 @@ func (wt *BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage)
 	   	fmt.Printf("Received msg from %s with multiaddrs: %s \n", pid, mas) */
 
 	now := time.Now()
+
+	// Get CIDs of contained blocks.
+	msgBlocks := msg.Blocks()
+	blocks := make([]cid.Cid, 0, len(msgBlocks))
+	for _, block := range msgBlocks {
+		blocks = append(blocks, block.Cid())
+	}
+
+	// Get block presences.
+	msgBlockPresences := msg.BlockPresences()
+	blockPresences := make([]BlockPresence, 0, len(msgBlockPresences))
+	for _, presence := range msgBlockPresences {
+		p := BlockPresence{
+			Cid: presence.Cid,
+		}
+		if presence.Type == pbmsg.Message_Have {
+			p.Type = Have
+		} else {
+			p.Type = DontHave
+		}
+		blockPresences = append(blockPresences, p)
+	}
+
+	// Construct the message to push to subscribers
 	msgToLog := BitswapMessage{
 		WantlistEntries: msg.Wantlist(),
 		FullWantList:    msg.Full(),
+		Blocks:          blocks,
+		BlockPresences:  blockPresences,
 	}
 
 	// This _will_ block if one of the subscribers blocks.
@@ -135,8 +163,12 @@ func (wt *BitswapWireTap) Disconnected(_ network.Network, conn network.Conn) {
 
 // OpenedStream is called when a stream has been opened.
 // We do not use this at the moment.
-func (*BitswapWireTap) OpenedStream(network.Network, network.Stream) {}
+func (*BitswapWireTap) OpenedStream(_ network.Network, s network.Stream) {
+	log.Debugf("Opened stream to peer %s, stream ID %s, direction %s, protocol %s", s.Conn().RemotePeer(), s.ID(), s.Stat().Direction, s.Protocol())
+}
 
 // ClosedStream is called when a stream has been closed.
 // We do not use this at the moment.
-func (*BitswapWireTap) ClosedStream(network.Network, network.Stream) {}
+func (*BitswapWireTap) ClosedStream(_ network.Network, s network.Stream) {
+	log.Debugf("Closed stream to peer %s, stream ID %s, direction %s, protocol %s", s.Conn().RemotePeer(), s.ID(), s.Stat().Direction, s.Protocol())
+}

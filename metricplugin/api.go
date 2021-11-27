@@ -3,22 +3,44 @@ package metricplugin
 import (
 	"time"
 
-	"github.com/pkg/errors"
-
 	bsmsg "github.com/ipfs/go-bitswap/message"
-	peer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/ipfs/go-cid"
+	"github.com/libp2p/go-libp2p-core/peer"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/pkg/errors"
 )
 
 // A BitswapMessage is the type pushed to remote clients for recorded incoming
 // Bitswap messages.
 type BitswapMessage struct {
-	// The entries requested.
+	// Wantlist entries sent with this message.
 	WantlistEntries []bsmsg.Entry `json:"wantlist_entries"`
 
-	// Whether this was a full wantlist.
+	// Whether the wantlist entries are a full new wantlist.
 	FullWantList bool `json:"full_wantlist"`
+
+	// Blocks sent with this message.
+	Blocks []cid.Cid `json:"blocks"`
+
+	// Block presence indicators sent with this message.
+	BlockPresences []BlockPresence `json:"block_presences"`
 }
+
+// A BlockPresence indicates the presence or absence of a block.
+type BlockPresence struct {
+	Cid  cid.Cid           `json:"cid"`
+	Type BlockPresenceType `json:"block_presence_type"`
+}
+
+// BlockPresenceType is an enum for presence or absence notifications.
+type BlockPresenceType int
+
+const (
+	// Have indicates that the peer has the block.
+	Have BlockPresenceType = 0
+	// DontHave indicates that the peer does not have the block.
+	DontHave BlockPresenceType = 1
+)
 
 // ConnectionEventType specifies the type of connection event.
 type ConnectionEventType int
