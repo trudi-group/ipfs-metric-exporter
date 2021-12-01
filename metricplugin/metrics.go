@@ -11,11 +11,11 @@ var trafficByGateway = prometheus.NewCounterVec(prometheus.CounterOpts{
 	[]string{"gateway"},
 )
 
-var dhtEnabledPeers = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-	Name: "plugin_metric_export_peers_by_dht_enabled",
-	Help: "Number of currently connected peers, distinguished by whether they speak the DHT protocol or not.",
+var supportedProtocolsAmongConnectedPeers = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Name: "plugin_metric_export_peers_supported_protocols",
+	Help: "Sum of supported protocols over all currently connected peers, as reported by the IPFS node.",
 },
-	[]string{"dht_enabled"},
+	[]string{"protocol"},
 )
 
 var agentVersionCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -24,3 +24,9 @@ var agentVersionCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 },
 	[]string{"agent_version"},
 )
+
+var streamCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Name: "plugin_metric_export_open_streams",
+	Help: "Number of currently open streams, by protocol and direction, as reported by the IPFS node.",
+},
+	[]string{"protocol", "direction"})

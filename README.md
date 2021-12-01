@@ -36,7 +36,7 @@ This plugin can be configured using the usual IPFS configuration.
     "Plugins": {
       "metric-export-plugin": {
         "Config": {
-          "QueryPeerListIntervalSeconds": 10,
+          "PopulatePrometheusInterval": 10,
           "TCPServerConfig": {
             "ListenAddress": "localhost:8181"
           }
@@ -47,14 +47,13 @@ This plugin can be configured using the usual IPFS configuration.
 ...
 ```
 
-### `QueryPeerListIntervalSeconds`
+### `PopulatePrometheusInterval`
 
-The plugin periodically goes through the node's peer store and collects various metrics about the peers.
+The plugin periodically goes through the node's peer store, open connections, and open streams to collect various metrics about them.
 These metrics are then pushed to Prometheus.
 This value controls the interval at which this is done, specified in seconds.
-This operation is not free, and Prometheus itself only scrapes (by default) every 15 seconds.
-
-Setting this value to zero disables the collection and pushing.
+Prometheus itself only scrapes (by default) every 15 seconds, so very small values are probably not useful.
+The default is ten seconds.
 
 ### `TCPServerConfig`
 
