@@ -37,6 +37,7 @@ This plugin can be configured using the usual IPFS configuration.
       "metric-export-plugin": {
         "Config": {
           "PopulatePrometheusInterval": 10,
+          "AgentVersionCutOff": 20,
           "TCPServerConfig": {
             "ListenAddress": "localhost:8181"
           }
