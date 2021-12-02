@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
+	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/pkg/errors"
-
 	bs "github.com/ipfs/go-bitswap"
-	core "github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 	logging "github.com/ipfs/go-log"
+	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -44,6 +44,11 @@ type MetricExporterPlugin struct {
 	// If not nil, a reference to the TCP server.
 	// Used for clean shutdown.
 	tcpServer *tcpServer
+
+	// Lifecycle management
+	closing     chan struct{}
+	closingLock sync.Mutex
+	wg          sync.WaitGroup
 }
 
 // Subscribe implements PluginAPI.
@@ -69,9 +74,8 @@ func (*MetricExporterPlugin) Ping() {}
 // Config contains all values configured via the standard IPFS config section on plugins.
 type Config struct {
 	// The interval at which to populate prometheus with statistics about
-	// currently connected peers.
-	// Set to zero to deactivate.
-	QueryPeerListIntervalSeconds int `json:"QueryPeerListIntervalSeconds"`
+	// currently connected peers, streams, connections, etc.
+	PopulatePrometheusInterval int `json:"PopulatePrometheusInterval"`
 
 	// Configuration of the TCP server config.
 	// If this is nil, the TCP logging will not be activated.
@@ -87,7 +91,7 @@ func (*MetricExporterPlugin) Name() string {
 // Version returns the version of this plugin.
 // This is part of the `plugin.Plugin` interface.
 func (*MetricExporterPlugin) Version() string {
-	return "0.0.1"
+	return "0.2.0"
 }
 
 // Init initializes this plugin with the given environment.
@@ -105,11 +109,9 @@ func (mep *MetricExporterPlugin) Init(env *plugin.Environment) error {
 		return errors.Wrap(err, "unable to unmarshal plugin config from JSON")
 	}
 
-	if pConf.QueryPeerListIntervalSeconds < 0 {
-		log.Errorf("invalid QueryPeerListIntervalSeconds, using default (%d)", defaultQueryPeerListIntervalSeconds)
-		pConf.QueryPeerListIntervalSeconds = defaultQueryPeerListIntervalSeconds
-	} else if pConf.QueryPeerListIntervalSeconds == 0 {
-		log.Info("QueryPeerListIntervalSeconds is zero, these metrics will not be published to prometheus.")
+	if pConf.PopulatePrometheusInterval <= 0 {
+		log.Errorf("invalid PopulatePrometheusInterval, using default (%d)", defaultQueryPeerListIntervalSeconds)
+		pConf.PopulatePrometheusInterval = defaultQueryPeerListIntervalSeconds
 	}
 
 	if pConf.TCPServerConfig == nil {
@@ -129,15 +131,15 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 		// This should never happen.
 		panic("metric exporter plugin started with IPFS not in daemon mode")
 	}
-
-	// Register metrics
-	prometheus.MustRegister(trafficByGateway)
-	prometheus.MustRegister(dhtEnabledPeers)
-	prometheus.MustRegister(agentVersionCount)
-
-	// Get the bitswap instance from the interface
 	mep.api = ipfsInstance
 
+	// Register metrics.
+	prometheus.MustRegister(trafficByGateway)
+	prometheus.MustRegister(supportedProtocolsAmongConnectedPeers)
+	prometheus.MustRegister(agentVersionCount)
+	prometheus.MustRegister(streamCount)
+
+	// Get the bitswap instance from the interface.
 	bitswapEngine, ok := mep.api.Exchange.(*bs.Bitswap)
 	if !ok {
 		return errors.New("could not get Bitswap implementation")
@@ -156,8 +158,9 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	ipfsInstance.PeerHost.Network().Notify(mep.wiretap)
 
 	// Periodically populate Prometheus with metrics about peer counts.
-	if mep.conf.QueryPeerListIntervalSeconds != 0 {
-		go mep.populatePromPeerCountLoop(time.Duration(mep.conf.QueryPeerListIntervalSeconds) * time.Second)
+	if mep.conf.PopulatePrometheusInterval != 0 {
+		mep.wg.Add(1)
+		go mep.populatePrometheus(time.Duration(mep.conf.PopulatePrometheusInterval) * time.Second)
 	}
 
 	if mep.conf.TCPServerConfig != nil {
@@ -176,69 +179,148 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 
 // Close implements io.Closer.
 // This is called to cleanly shut down the plugin when the daemon exits.
+// This is idempotent.
 func (mep *MetricExporterPlugin) Close() error {
 	// This is potentially racy, but probably not in our case.
 	if mep.tcpServer != nil {
 		mep.tcpServer.Shutdown()
 	}
+
+	mep.closingLock.Lock()
+	select {
+	case <-mep.closing:
+	// Already closed/closing
+	default:
+		close(mep.closing)
+	}
+	mep.closingLock.Unlock()
+
+	mep.wg.Wait()
+
 	return nil
 }
 
-func streamsContainKad(streams []network.Stream) bool {
-	for _, s := range streams {
-		if strings.Contains(string(s.Protocol()), kadDHTString) {
-			// fmt.Printf("Protocol.ID contains kad: %s\n", s.Protocol())
-			return true
-		}
-	}
-
-	return false
-}
-
-func (mep *MetricExporterPlugin) populatePromPeerCountLoop(interval time.Duration) {
+func (mep *MetricExporterPlugin) populatePrometheus(interval time.Duration) {
+	defer mep.wg.Done()
 	ticker := time.NewTicker(interval)
 
 	for {
-		// Every time the ticker fires we return
-		// (1) The number of DHT clients and servers
+		// Every time the ticker fires we compute
+		// (1) The supported protocols among connected peers
 		// (2) The agent version of every connected peer
-		// ad (1)
-		<-ticker.C
-		// fmt.Println("Ticker fired")
-		currentConns := mep.api.PeerHost.Network().Conns()
-
-		dhtEnabledCount := 0
-		dhtDisabledCount := 0
-
-		for _, c := range currentConns {
-			streams := c.GetStreams()
-			if streamsContainKad(streams) {
-				dhtEnabledCount++
-			} else {
-				dhtDisabledCount++
-			}
+		// (3) The number of streams by protocol and direction
+		select {
+		case <-ticker.C:
+		case <-mep.closing:
+			log.Debug("populatePrometheus loop exiting")
+			return
 		}
 
-		// Populate prometheus
-		dhtEnabledPeers.With(prometheus.Labels{"dht_enabled": "yes"}).Set(float64(dhtEnabledCount))
-		dhtEnabledPeers.With(prometheus.Labels{"dht_enabled": "no"}).Set(float64(dhtDisabledCount))
+		// We ask the IPFS node for these just once and then use them to
+		// calculate various things for prometheus.
+		// That way, the metrics should be consistent for one point in time.
+		currentConns := mep.api.PeerHost.Network().Conns()
+		currentPeers := mep.api.PeerHost.Network().Peers()
 
-		// ad (2)
-		// One could alternatively solve this via the connection events -- if we have the peer store entry then already.
-		// It could be the case that the ID protocol has not finished when we receive the connection event.
-		// -> After talking to mxinden it is definitely the case that the ID protocol will not have finished
-		agentVersionCount.Reset()
-		connectedPeers := mep.api.PeerHost.Network().Peers()
+		// ad (1): Sum supported protocols over connected peers.
+		before := time.Now()
+		protocolCounts := make(map[string]int)
 
-		for _, p := range connectedPeers {
+		for _, peerID := range currentPeers {
+			// This returns a slice of strings instead of a slice of protocol.ID
+			// I don't know why...
+			protocols, err := mep.api.Peerstore.GetProtocols(peerID)
+			if err != nil {
+				log.Warnf("populatePrometheus: unable to get protocols for peer %s: %s", peerID, err)
+				continue
+			}
+			for _, protocolID := range protocols {
+				protocolCounts[protocolID] = protocolCounts[protocolID] + 1
+			}
+		}
+		elapsed := time.Since(before)
+
+		log.Debugf("populatePrometheus: took %s to count supported protocols among %d peers: %+v", elapsed, len(currentPeers), protocolCounts)
+		supportedProtocolsAmongConnectedPeers.Reset()
+		for protocolID, count := range protocolCounts {
+			supportedProtocolsAmongConnectedPeers.With(prometheus.Labels{"protocol": protocolID}).Set(float64(count))
+		}
+
+		// ad (2): Count agent versions of connected peers.
+		// One could alternatively solve this via the connection events -- if we
+		// have the peer store entry then already.
+		// It could be the case that the ID protocol has not finished when we
+		// receive the connection event.
+		// -> After talking to mxinden it is definitely the case that the ID
+		// protocol will not have finished
+		before = time.Now()
+		countsByAgentVersion := make(map[string]int)
+
+		for _, p := range currentPeers {
 			agentVersion, err := mep.api.PeerHost.Peerstore().Get(p, "AgentVersion")
 			if err != nil {
 				continue
 			}
 			av := agentVersion.(string)
+			countsByAgentVersion[av] = countsByAgentVersion[av] + 1
+		}
+		elapsed = time.Since(before)
 
-			// TODO this is potentially slow. We could pre-compute the counts.
-			agentVersionCount.With(prometheus.Labels{"agent_version": av}).Inc()
+		log.Debugf("populatePrometheus: took %s to calculate agent version counts %+v", elapsed, countsByAgentVersion)
+		agentVersionCount.Reset()
+		for agentVersion, count := range countsByAgentVersion {
+			agentVersionCount.With(prometheus.Labels{
+				"agent_version": agentVersion,
+			}).Set(float64(count))
+		}
+
+		// ad (3): Count streams by protocol and direction.
+		before = time.Now()
+		countsByProtocolAndDirection := make(map[protocol.ID]struct {
+			inbound  int
+			outbound int
+			unknown  int
+		})
+
+		for _, conn := range currentConns {
+			streams := conn.GetStreams()
+			for _, stream := range streams {
+				protocolID := stream.Protocol()
+				count := countsByProtocolAndDirection[protocolID]
+
+				direction := stream.Stat().Direction
+				if direction == network.DirInbound {
+					count.inbound++
+				} else if direction == network.DirOutbound {
+					count.outbound++
+				} else if direction == network.DirUnknown {
+					count.unknown++
+				} else {
+					panic(fmt.Sprintf("got invalid stream direction %d", direction))
+				}
+
+				countsByProtocolAndDirection[protocolID] = count
+			}
+		}
+		elapsed = time.Since(before)
+
+		log.Debugf("populatePrometheus: took %s to calculate stream counts %+v", elapsed, countsByProtocolAndDirection)
+		streamCount.Reset()
+		for protocolID, counts := range countsByProtocolAndDirection {
+			streamCount.With(prometheus.Labels{
+				"protocol":  string(protocolID),
+				"direction": "inbound",
+			}).Set(float64(counts.inbound))
+
+			streamCount.With(prometheus.Labels{
+				"protocol":  string(protocolID),
+				"direction": "outbound",
+			}).Set(float64(counts.outbound))
+
+			streamCount.With(prometheus.Labels{
+				"protocol":  string(protocolID),
+				"direction": "unknown",
+			}).Set(float64(counts.unknown))
 		}
 	}
 }
