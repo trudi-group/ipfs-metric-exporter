@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"sync"
 	"time"
 
@@ -21,6 +22,8 @@ const (
 	// The default interval at which to populate prometheus with peer list
 	// metrics.
 	defaultQueryPeerListIntervalSeconds int = 10
+	// The default number of most-seen agent versions that are reported to prometheus.
+	defaultAgentVersionCutOff int = 20
 )
 
 var (
@@ -77,6 +80,10 @@ type Config struct {
 	// currently connected peers, streams, connections, etc.
 	PopulatePrometheusInterval int `json:"PopulatePrometheusInterval"`
 
+	// The number of top N agent versions that are reported to prometheus.
+	// AVs are somewhat arbitrarily chosen strings and clutter prometheus.
+	AgentVersionCutOff int `json:"AgentVersionCutOff"`
+
 	// Configuration of the TCP server config.
 	// If this is nil, the TCP logging will not be activated.
 	TCPServerConfig *TCPServerConfig `json:"TCPServerConfig"`
@@ -112,6 +119,11 @@ func (mep *MetricExporterPlugin) Init(env *plugin.Environment) error {
 	if pConf.PopulatePrometheusInterval <= 0 {
 		log.Errorf("invalid PopulatePrometheusInterval, using default (%d)", defaultQueryPeerListIntervalSeconds)
 		pConf.PopulatePrometheusInterval = defaultQueryPeerListIntervalSeconds
+	}
+
+	if pConf.AgentVersionCutOff <= 0 {
+		log.Errorf("invalid AgentVersionCutOff, using default (%d)", defaultAgentVersionCutOff)
+		pConf.AgentVersionCutOff = defaultAgentVersionCutOff
 	}
 
 	if pConf.TCPServerConfig == nil {
@@ -264,15 +276,38 @@ func (mep *MetricExporterPlugin) populatePrometheus(interval time.Duration) {
 			av := agentVersion.(string)
 			countsByAgentVersion[av] = countsByAgentVersion[av] + 1
 		}
+		// Sort the agent versions in decreasing order
+		sortedAgentVersions := make([]string, 0, len(countsByAgentVersion))
+		for av := range countsByAgentVersion {
+			sortedAgentVersions = append(sortedAgentVersions, av)
+		}
+		sort.Slice(sortedAgentVersions, func(i, j int) bool {
+			// This expects a Less() function, but since we want descending order we use ">"
+			return countsByAgentVersion[sortedAgentVersions[i]] > countsByAgentVersion[sortedAgentVersions[j]]
+		})
 		elapsed = time.Since(before)
 
 		log.Debugf("populatePrometheus: took %s to calculate agent version counts %+v", elapsed, countsByAgentVersion)
 		agentVersionCount.Reset()
-		for agentVersion, count := range countsByAgentVersion {
+		maxIndex := mep.conf.AgentVersionCutOff
+		// There is no math.Min for integers and typecasting two ints -> float64 and the result -> int looks super confusing.
+		if mep.conf.AgentVersionCutOff >= len(sortedAgentVersions) {
+			maxIndex = len(sortedAgentVersions)
+		}
+
+		for _, agentVersion := range sortedAgentVersions[:maxIndex] {
 			agentVersionCount.With(prometheus.Labels{
 				"agent_version": agentVersion,
-			}).Set(float64(count))
+			}).Set(float64(countsByAgentVersion[agentVersion]))
 		}
+		// Add all other agent versions to a "other" category
+		var avSum int
+		for _, av := range sortedAgentVersions[maxIndex:] {
+			avSum += countsByAgentVersion[av]
+		}
+		agentVersionCount.With(prometheus.Labels{
+			"agent_version": "others",
+		}).Set(float64(avSum))
 
 		// ad (3): Count streams by protocol and direction.
 		before = time.Now()
