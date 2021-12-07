@@ -342,20 +342,26 @@ func (mep *MetricExporterPlugin) populatePrometheus(interval time.Duration) {
 		log.Debugf("populatePrometheus: took %s to calculate stream counts %+v", elapsed, countsByProtocolAndDirection)
 		streamCount.Reset()
 		for protocolID, counts := range countsByProtocolAndDirection {
-			streamCount.With(prometheus.Labels{
-				"protocol":  string(protocolID),
-				"direction": "inbound",
-			}).Set(float64(counts.inbound))
+			if counts.inbound != 0 {
+				streamCount.With(prometheus.Labels{
+					"protocol":  string(protocolID),
+					"direction": "inbound",
+				}).Set(float64(counts.inbound))
+			}
 
-			streamCount.With(prometheus.Labels{
-				"protocol":  string(protocolID),
-				"direction": "outbound",
-			}).Set(float64(counts.outbound))
+			if counts.outbound != 0 {
+				streamCount.With(prometheus.Labels{
+					"protocol":  string(protocolID),
+					"direction": "outbound",
+				}).Set(float64(counts.outbound))
+			}
 
-			streamCount.With(prometheus.Labels{
-				"protocol":  string(protocolID),
-				"direction": "unknown",
-			}).Set(float64(counts.unknown))
+			if counts.unknown != 0 {
+				streamCount.With(prometheus.Labels{
+					"protocol":  string(protocolID),
+					"direction": "unknown",
+				}).Set(float64(counts.unknown))
+			}
 		}
 	}
 }
