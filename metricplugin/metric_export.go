@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"sync"
 	"time"
+	"unsafe"
 
 	bs "github.com/ipfs/go-bitswap"
+	bsnet "github.com/ipfs/go-bitswap/network"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 	logging "github.com/ipfs/go-log"
@@ -150,6 +153,9 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	prometheus.MustRegister(supportedProtocolsAmongConnectedPeers)
 	prometheus.MustRegister(agentVersionCount)
 	prometheus.MustRegister(streamCount)
+	prometheus.MustRegister(wiretapBitswapSenderCount)
+	prometheus.MustRegister(wiretapPeerCount)
+	prometheus.MustRegister(wiretapConnectionCount)
 
 	// Get the bitswap instance from the interface.
 	bitswapEngine, ok := mep.api.Exchange.(*bs.Bitswap)
@@ -157,13 +163,21 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 		return errors.New("could not get Bitswap implementation")
 	}
 
+	// Get the bsnet.BitSwapNetwork implementation used in running Bitswap
+	// instance.
+	// This will break if the structure of the bs.Bitswap struct changes.
+	// Hopefully that doesn't happen too often...
+	// See https://stackoverflow.com/a/60598827
+	bsnetImpl, ok := (getUnexportedField(reflect.ValueOf(bitswapEngine).Elem().FieldByName("network"))).(bsnet.BitSwapNetwork)
+	if !ok {
+		return errors.New("could not get Bitswap network implementation")
+	}
+
 	// Create a wiretap instance & subscribe to notifications in Bitswap &
 	// network.Network.
 	// We need to start this before we start the TCP server, so that clients can
 	// subscribe immediately without fail or races.
-	mep.wiretap = &BitswapWireTap{
-		api: ipfsInstance,
-	}
+	mep.wiretap = NewWiretap(ipfsInstance, bsnetImpl)
 	bs.EnableWireTap(mep.wiretap)(bitswapEngine)
 
 	// Subscribe to network events.
@@ -189,6 +203,12 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	return nil
 }
 
+// Reflect magic.
+// See https://stackoverflow.com/a/60598827.
+func getUnexportedField(field reflect.Value) interface{} {
+	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
+}
+
 // Close implements io.Closer.
 // This is called to cleanly shut down the plugin when the daemon exits.
 // This is idempotent.
@@ -196,6 +216,9 @@ func (mep *MetricExporterPlugin) Close() error {
 	// This is potentially racy, but probably not in our case.
 	if mep.tcpServer != nil {
 		mep.tcpServer.Shutdown()
+	}
+	if mep.wiretap != nil {
+		mep.wiretap.Shutdown()
 	}
 
 	mep.closingLock.Lock()
