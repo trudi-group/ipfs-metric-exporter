@@ -257,11 +257,12 @@ func (c *tcpClient) run() {
 				outMsg.Response.Ping = &pingResponse{}
 			} else if msg.Request.Subscribe != nil {
 				err = c.plugin.Subscribe(c)
-				errMsg := ""
+				var errMsg *string
 				if err != nil {
-					errMsg = err.Error()
+					err := err.Error()
+					errMsg = &err
 				}
-				outMsg.Response.Subscribe = &subscribeResponse{Error: &errMsg}
+				outMsg.Response.Subscribe = &subscribeResponse{Error: errMsg}
 			} else if msg.Request.Unsubscribe != nil {
 				c.plugin.Unsubscribe(c)
 				outMsg.Response.Unsubscribe = &unsubscribeResponse{}
