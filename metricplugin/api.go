@@ -24,6 +24,10 @@ type BitswapMessage struct {
 
 	// Block presence indicators sent with this message.
 	BlockPresences []BlockPresence `json:"block_presences"`
+
+	// Underlay addresses of the peer we were connected to when the message
+	// was received.
+	ConnectedAddresses []ma.Multiaddr `json:"connected_addresses"`
 }
 
 // A BlockPresence indicates the presence or absence of a block.
