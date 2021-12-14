@@ -246,16 +246,19 @@ func (wt *BitswapWireTap) Shutdown() {
 }
 
 // MessageReceived is called on incoming Bitswap messages.
-func (wt *BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage) {
-	/* 	conns := wt.api.PeerHost.Network().ConnsToPeer(pid)
-	   	// Unpack the multiaddresses
-	   	var mas []ma.Multiaddr
-	   	for _, c := range conns {
-	   		mas = append(mas, c.RemoteMultiaddr())
-	   	}
-	   	fmt.Printf("Received msg from %s with multiaddrs: %s \n", pid, mas) */
-
+func (wt *BitswapWireTap) MessageReceived(peerID peer.ID, msg bsmsg.BitSwapMessage) {
 	now := time.Now()
+
+	// Get potential underlay addresses from current connections to the peer.
+	var potentialAddresses []ma.Multiaddr
+	// TODO we have to keep an eye on performance: This read-locks the
+	// connection manager(? or something else) and allocates a slice.
+	// Copying a few addresses is probably fast, but this might become a problem
+	// if we receive multiple thousand messages per second.
+	conns := wt.api.PeerHost.Network().ConnsToPeer(peerID)
+	for _, c := range conns {
+		potentialAddresses = append(potentialAddresses, c.RemoteMultiaddr())
+	}
 
 	// Get CIDs of contained blocks.
 	msgBlocks := msg.Blocks()
@@ -281,18 +284,20 @@ func (wt *BitswapWireTap) MessageReceived(pid peer.ID, msg bsmsg.BitSwapMessage)
 
 	// Construct the message to push to subscribers
 	msgToLog := BitswapMessage{
-		WantlistEntries: msg.Wantlist(),
-		FullWantList:    msg.Full(),
-		Blocks:          blocks,
-		BlockPresences:  blockPresences,
+		WantlistEntries:    msg.Wantlist(),
+		FullWantList:       msg.Full(),
+		Blocks:             blocks,
+		BlockPresences:     blockPresences,
+		ConnectedAddresses: potentialAddresses,
 	}
+	log.Debugf("Received Bitswap message from peer %s: %+v", peerID, msgToLog)
 
 	// This _will_ block if one of the subscribers blocks.
 	// We'll have to see if that's a problem.
 	wt.subscribers.lock.RLock()
 	defer wt.subscribers.lock.RUnlock()
 	for _, sub := range wt.subscribers.subscribers {
-		sub.BitswapMessageReceived(now, pid, msgToLog)
+		sub.BitswapMessageReceived(now, peerID, msgToLog)
 	}
 }
 
