@@ -85,6 +85,7 @@ func NewWiretap(ipfsInstance *core.IpfsNode, bsnetImpl bsnet.BitSwapNetwork) *Bi
 			allConnections: make(map[string]struct{}),
 			peers:          make(map[peer.ID]peerConnection),
 		},
+		closing: make(chan struct{}),
 	}
 
 	// Start a goroutine to periodically go through all peers and open Bitswap
@@ -241,6 +242,8 @@ func (wt *BitswapWireTap) Shutdown() {
 		close(wt.closing)
 	}
 	wt.closeLock.Unlock()
+
+	// close bitswap senders?
 
 	wt.wg.Wait()
 }
