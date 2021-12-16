@@ -149,7 +149,6 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	mep.api = ipfsInstance
 
 	// Register metrics.
-	prometheus.MustRegister(trafficByGateway)
 	prometheus.MustRegister(supportedProtocolsAmongConnectedPeers)
 	prometheus.MustRegister(agentVersionCount)
 	prometheus.MustRegister(streamCount)
