@@ -147,9 +147,9 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 		panic("metric exporter plugin started with IPFS not in daemon mode")
 	}
 	mep.api = ipfsInstance
+	mep.closing = make(chan struct{})
 
 	// Register metrics.
-	prometheus.MustRegister(trafficByGateway)
 	prometheus.MustRegister(supportedProtocolsAmongConnectedPeers)
 	prometheus.MustRegister(agentVersionCount)
 	prometheus.MustRegister(streamCount)

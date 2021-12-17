@@ -85,6 +85,7 @@ func NewWiretap(ipfsInstance *core.IpfsNode, bsnetImpl bsnet.BitSwapNetwork) *Bi
 			allConnections: make(map[string]struct{}),
 			peers:          make(map[peer.ID]peerConnection),
 		},
+		closing: make(chan struct{}),
 	}
 
 	// Start a goroutine to periodically go through all peers and open Bitswap
@@ -242,6 +243,8 @@ func (wt *BitswapWireTap) Shutdown() {
 	}
 	wt.closeLock.Unlock()
 
+	// close bitswap senders?
+
 	wt.wg.Wait()
 }
 
@@ -250,7 +253,11 @@ func (wt *BitswapWireTap) MessageReceived(peerID peer.ID, msg bsmsg.BitSwapMessa
 	now := time.Now()
 
 	// Get potential underlay addresses from current connections to the peer.
-	var potentialAddresses []ma.Multiaddr
+	// We explicitly allocate an empty slice because the ConnectedAddresses
+	// field on the messages we log (and send out via TCP) is non-nullable.
+	// It apparently sometimes happens that we don't find an open connection
+	// to the peer we received from (race condition, yay).
+	potentialAddresses := make([]ma.Multiaddr, 0, 1)
 	// TODO we have to keep an eye on performance: This read-locks the
 	// connection manager(? or something else) and allocates a slice.
 	// Copying a few addresses is probably fast, but this might become a problem
