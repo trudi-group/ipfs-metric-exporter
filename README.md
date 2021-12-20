@@ -56,6 +56,12 @@ This value controls the interval at which this is done, specified in seconds.
 Prometheus itself only scrapes (by default) every 15 seconds, so very small values are probably not useful.
 The default is ten seconds.
 
+### `AgentVersionCutOff`
+
+The plugin collects metrics about the agent versions of connected peers.
+This value configures a cutoff for how many agent version strings should be reported to prometheus.
+The remainder (everything that doesn't fit within the cutoff) is summed and reported as `others` to prometheus.
+
 ### `TCPServerConfig`
 
 This configures the TCP server used to export metrics, Bitswap messages, and other stuff in real time.
@@ -108,7 +114,16 @@ type versionMessage struct {
 Encoded in the usual manner.
 Both sides verify that the version matches.
 If there is a mismatch, the connection is closed.
-The current version of the API, as described here, is `1`.
+The current version of the API, as described here, is `2`.
+
+### Changelog
+
+Version 1 is the initial version of the format.
+It contains the framed messages, requests, and responses.
+
+Version 2 introduces block presences (see the [Bitswap spec](https://github.com/ipfs/go-bitswap/blob/master/docs/how-bitswap-works.md)) to pushed Bitswap messages.
+
+### Messages from Client -> Plugin
 
 Messages going from a client to this plugin have the following format:
 ```go
@@ -145,6 +160,8 @@ type unsubscribeRequest struct{}
 
 type pingRequest struct{}
 ```
+
+### Messages from Plugin -> Client
 
 Messages originating from this plugin have the following format:
 ```go
@@ -185,6 +202,8 @@ type unsubscribeResponse struct{}
 type pingResponse struct{}
 ```
 
+### Events
+
 A client is, by default, not subscribed to events emitted by this plugin.
 Events sent by this plugin are of this format:
 ```go
@@ -206,6 +225,8 @@ type event struct {
 ```
 
 See also the [sources](metricplugin/tcp.go).
+
+The `BitswapMessage` and `ConnectionEvent` structs are specified in [metricplugin/api.go](metricplugin/api.go).
 
 ## License
 
