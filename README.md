@@ -12,7 +12,7 @@ This is an internal plugin, which needs to be built against the sources that pro
 plug into.
 __The `ipfs` binary and this plugin must be built from/against the same IPFS sources, using the same version of the Go
 compiler.__
-We build and run against go-ipfs v0.10.0, using Go 1.16 due to aforementioned bug in 1.17.
+We build and run against go-ipfs v0.11.0, using Go 1.16 due to aforementioned bug in 1.17.
 You can build against either
 1. the official, online `go-ipfs` source (and recompile IPFS with Go 1.16) or
 2. a local fork, in which case you need to a `replace` directive to the `go.mod` file.
