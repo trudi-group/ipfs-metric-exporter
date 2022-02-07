@@ -32,13 +32,17 @@ type BitswapMessage struct {
 
 // A BlockPresence indicates the presence or absence of a block.
 type BlockPresence struct {
-	Cid  cid.Cid           `json:"cid"`
+	// Cid is the referenced CID.
+	Cid cid.Cid `json:"cid"`
+
+	// Type indicates the block presence type.
 	Type BlockPresenceType `json:"block_presence_type"`
 }
 
 // BlockPresenceType is an enum for presence or absence notifications.
 type BlockPresenceType int
 
+// Block presence constants.
 const (
 	// Have indicates that the peer has the block.
 	Have BlockPresenceType = 0
