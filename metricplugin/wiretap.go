@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	_ bitswap.WireTap  = (*BitswapWireTap)(nil)
+	_ bitswap.Tracer   = (*BitswapWireTap)(nil)
 	_ network.Notifiee = (*BitswapWireTap)(nil)
 )
 

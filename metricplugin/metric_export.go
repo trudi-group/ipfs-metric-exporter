@@ -178,7 +178,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	// We need to start this before we start the TCP server, so that clients can
 	// subscribe immediately without fail or races.
 	mep.wiretap = NewWiretap(ipfsInstance, bsnetImpl)
-	bs.EnableWireTap(mep.wiretap)(bitswapEngine)
+	bs.WithTracer(mep.wiretap)(bitswapEngine)
 
 	// Subscribe to network events.
 	ipfsInstance.PeerHost.Network().Notify(mep.wiretap)
