@@ -26,6 +26,18 @@ Manually, building with `go build -buildmode=plugin -o mexport.so` should also w
 This will produce a `mexport.so` library which needs to be placed in the IPFS plugin directory, which is
 `$IPFS_PATH/plugins` by default.
 
+### Docker
+
+You can build this project together with a matching go-ipfs executable within Docker.
+This is nice, because you get reproducible, matching binaries, compiled with Go 1.16 on Debian bullseye.
+Building on bullseye gives us a libc version which is a bit older.
+This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
+
+The [builder Dockerfile](./Dockerfile.builder) implements a builder stage.
+The resulting binaries are placed in `/usr/local/bin/ipfs/` inside the image.
+
+The [build-in-docker.sh](./build-in-docker.sh) script executes the builder and copies the produced binaries to the `out/` directory of the project.
+
 ## Configuration
 
 This plugin can be configured using the usual IPFS configuration.
