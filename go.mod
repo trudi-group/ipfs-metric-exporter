@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/ipfs/go-bitswap v0.5.1
 	github.com/ipfs/go-cid v0.1.0
-	github.com/ipfs/go-ipfs v0.11.0
+	github.com/ipfs/go-ipfs v0.12.0
 	github.com/ipfs/go-log v1.0.5
 	github.com/libp2p/go-libp2p-core v0.11.0
 	github.com/libp2p/go-msgio v0.1.0
