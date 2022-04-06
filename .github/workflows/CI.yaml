@@ -29,7 +29,7 @@ jobs:
         fi
     - name: Format
       run: |
-        go install mvdan.cc/gofumpt@latest
+        go install mvdan.cc/gofumpt@v0.3.0
         GOFUMPT_OUTPUT="$(gofumpt -d .)"
         if [ -n "$GOFUMPT_OUTPUT" ]; then
           echo "${GOFUMPT_OUTPUT}"
@@ -45,6 +45,8 @@ jobs:
         fi
     - name: Build
       run: go build -v -buildmode=plugin -o mexport.so
+    - name: Build Docker Image
+      run: ./build-in-docker.sh
 
   unit:
     name: Unit Tests
