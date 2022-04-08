@@ -8,7 +8,10 @@ import (
 	"sync"
 	"time"
 
+	pbmsg "github.com/ipfs/go-bitswap/message/pb"
+	"github.com/ipfs/go-cid"
 	"github.com/julienschmidt/httprouter"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/pkg/errors"
 )
 
@@ -25,6 +28,9 @@ const (
 	APIBasePath                = "/metric_plugin/v1"
 	APIPingPath                = APIBasePath + "/ping"
 	APIMonitoringAddressesPath = APIBasePath + "/monitoring_addresses"
+	APIBroadcastWantPath       = APIBasePath + "/broadcast_want"
+	APIBroadcastCancelPath     = APIBasePath + "/broadcast_cancel"
+	APIBroadcastWantCancelPath = APIBasePath + "/broadcast_want_cancel"
 )
 
 type httpServer struct {
@@ -120,9 +126,15 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 	router.GET(APIBasePath, func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 		_, _ = fmt.Fprintf(w, "Methods:\n"+
 			"GET  %s no-op\n"+
-			"GET  %s returns a list of addresses on which the monitor is listening for Bitswap monitoring connections",
+			"GET  %s returns a list of addresses on which the monitor is listening for Bitswap monitoring connections\n"+
+			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs\n"+
+			"POST %s broadcasts a Bitswap CANCEL message for a given list of CIDs\n"+
+			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs, followed by a CANCEL message after a given amount of time",
 			APIPingPath,
-			APIMonitoringAddressesPath)
+			APIMonitoringAddressesPath,
+			APIBroadcastWantPath,
+			APIBroadcastCancelPath,
+			APIBroadcastWantCancelPath)
 	})
 
 	router.GET(APIPingPath,
@@ -130,6 +142,15 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 
 	router.GET(APIMonitoringAddressesPath,
 		s.buildHandler(monitoringAddresses(s.api)))
+
+	router.POST(APIBroadcastWantPath,
+		s.buildHandler(broadcastBitswapWant(s.api)))
+
+	router.POST(APIBroadcastCancelPath,
+		s.buildHandler(broadcastBitswapCancel(s.api)))
+
+	router.POST(APIBroadcastWantCancelPath,
+		s.buildHandler(broadcastBitswapWantCancel(s.api)))
 
 	return router
 }
@@ -181,6 +202,9 @@ var ErrServerClosing = newPresentableError(http.StatusServiceUnavailable, "serve
 // ErrInternalServerError is returned when there was either a panic processing
 // a request or a non-presentable error was generated during execution.
 var ErrInternalServerError = newPresentableError(http.StatusInternalServerError, "internal server error")
+
+// ErrInvalidRequest is returned for invalid requests, such as malformed JSON.
+var ErrInvalidRequest = newPresentableError(http.StatusBadRequest, "invalid request")
 
 // response is a marker interface for valid responses.
 // In future versions this could maybe be replaced by generics.
@@ -294,6 +318,52 @@ func jsonEncodeResponse(f statusedResponseFunction) httprouter.Handle {
 	}
 }
 
+type broadcastBitswapWantResponse struct {
+	Peers []broadcastBitswapWantResponseEntry `json:"peers"`
+}
+
+func (broadcastBitswapWantResponse) response() {}
+
+type broadcastBitswapSendResponseEntry struct {
+	TimestampBeforeSend time.Time `json:"timestamp_before_send"`
+	SendDurationMillis  int64     `json:"send_duration_millis"`
+	Error               *string   `json:"error,omitempty"`
+}
+
+type broadcastBitswapWantResponseEntry struct {
+	broadcastBitswapSendResponseEntry
+	Peer            peer.ID                          `json:"peer"`
+	RequestTypeSent *pbmsg.Message_Wantlist_WantType `json:"request_type_sent,omitempty"`
+}
+
+type broadcastBitswapCancelResponse struct {
+	Peers []broadcastBitswapCancelResponseEntry `json:"peers"`
+}
+
+func (broadcastBitswapCancelResponse) response() {}
+
+type broadcastBitswapCancelResponseEntry struct {
+	broadcastBitswapSendResponseEntry
+	Peer peer.ID `json:"peer"`
+}
+
+type broadcastBitswapWantCancelResponse struct {
+	Peers []broadcastBitswapWantCancelResponseEntry `json:"peers"`
+}
+
+func (broadcastBitswapWantCancelResponse) response() {}
+
+type broadcastBitswapWantCancelWantEntry struct {
+	broadcastBitswapSendResponseEntry
+	RequestTypeSent *pbmsg.Message_Wantlist_WantType `json:"request_type_sent,omitempty"`
+}
+
+type broadcastBitswapWantCancelResponseEntry struct {
+	Peer         peer.ID                             `json:"peer"`
+	WantStatus   broadcastBitswapWantCancelWantEntry `json:"want_status"`
+	CancelStatus broadcastBitswapSendResponseEntry   `json:"cancel_status"`
+}
+
 type pingResponse struct{}
 
 func (pingResponse) response() {}
@@ -303,6 +373,15 @@ type monitoringAddressesResponse struct {
 }
 
 func (monitoringAddressesResponse) response() {}
+
+type broadcastBitswapRequest struct {
+	Cids []cid.Cid `json:"cids"`
+}
+
+type broadcastBitswapWantCancelRequest struct {
+	Cids                []cid.Cid `json:"cids"`
+	SecondsBeforeCancel uint32    `json:"seconds_before_cancel"`
+}
 
 func ping(api RPCAPI) apiFunction {
 	return func(_ *http.Request, _ httprouter.Params) (response, error) {
@@ -322,5 +401,113 @@ func monitoringAddresses(api RPCAPI) apiFunction {
 		}
 
 		return monitoringAddressesResponse{Addresses: addrs}, nil
+	}
+}
+
+func broadcastBitswapWant(api RPCAPI) apiFunction {
+	return func(r *http.Request, _ httprouter.Params) (response, error) {
+		var req broadcastBitswapRequest
+
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, ErrInvalidRequest
+		}
+
+		res := api.BroadcastBitswapWant(req.Cids)
+		resp := make([]broadcastBitswapWantResponseEntry, 0, len(res))
+		for _, entry := range res {
+			var errMsg *string
+			if entry.Error != nil {
+				err := entry.Error.Error()
+				errMsg = &err
+			}
+			resp = append(resp, broadcastBitswapWantResponseEntry{
+				broadcastBitswapSendResponseEntry: broadcastBitswapSendResponseEntry{
+					Error:               errMsg,
+					TimestampBeforeSend: entry.TimestampBeforeSend,
+					SendDurationMillis:  entry.SendDurationMillis,
+				},
+				Peer:            entry.Peer,
+				RequestTypeSent: entry.RequestTypeSent,
+			})
+		}
+
+		return broadcastBitswapWantResponse{Peers: resp}, nil
+	}
+}
+
+func broadcastBitswapCancel(api RPCAPI) apiFunction {
+	return func(r *http.Request, _ httprouter.Params) (response, error) {
+		var req broadcastBitswapRequest
+
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, ErrInvalidRequest
+		}
+
+		res := api.BroadcastBitswapCancel(req.Cids)
+
+		resp := make([]broadcastBitswapCancelResponseEntry, 0, len(res))
+		for _, entry := range res {
+			var errMsg *string
+			if entry.Error != nil {
+				err := entry.Error.Error()
+				errMsg = &err
+			}
+			resp = append(resp, broadcastBitswapCancelResponseEntry{
+				broadcastBitswapSendResponseEntry: broadcastBitswapSendResponseEntry{
+					Error:               errMsg,
+					TimestampBeforeSend: entry.TimestampBeforeSend,
+					SendDurationMillis:  entry.SendDurationMillis,
+				},
+				Peer: entry.Peer,
+			})
+		}
+
+		return broadcastBitswapCancelResponse{Peers: resp}, nil
+	}
+}
+
+func broadcastBitswapWantCancel(api RPCAPI) apiFunction {
+	return func(r *http.Request, _ httprouter.Params) (response, error) {
+		var req broadcastBitswapWantCancelRequest
+
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, ErrInvalidRequest
+		}
+
+		res := api.BroadcastBitswapWantCancel(req.Cids, uint(req.SecondsBeforeCancel))
+
+		resp := make([]broadcastBitswapWantCancelResponseEntry, 0, len(res))
+		for _, entry := range res {
+			var wantErrMsg, cancelErrMsg *string
+			if entry.CancelStatus.Error != nil {
+				err := entry.CancelStatus.Error.Error()
+				cancelErrMsg = &err
+			}
+			if entry.WantStatus.Error != nil {
+				err := entry.WantStatus.Error.Error()
+				wantErrMsg = &err
+			}
+			resp = append(resp, broadcastBitswapWantCancelResponseEntry{
+				CancelStatus: broadcastBitswapSendResponseEntry{
+					Error:               cancelErrMsg,
+					TimestampBeforeSend: entry.CancelStatus.TimestampBeforeSend,
+					SendDurationMillis:  entry.CancelStatus.SendDurationMillis,
+				},
+				WantStatus: broadcastBitswapWantCancelWantEntry{
+					broadcastBitswapSendResponseEntry: broadcastBitswapSendResponseEntry{
+						Error:               wantErrMsg,
+						TimestampBeforeSend: entry.WantStatus.TimestampBeforeSend,
+						SendDurationMillis:  entry.WantStatus.SendDurationMillis,
+					},
+					RequestTypeSent: entry.WantStatus.RequestTypeSent,
+				},
+				Peer: entry.Peer,
+			})
+		}
+
+		return broadcastBitswapWantCancelResponse{Peers: resp}, nil
 	}
 }

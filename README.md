@@ -230,6 +230,75 @@ type monitoringAddressesResponse struct {
 }
 ```
 
+### `POST /broadcast_want` and `POST /broadcast_cancel`
+
+These methods initiate a WANT or CANCEL broadcast to be sent via Bitswap, respectively.
+They each expect a list of CIDs, JSON-encoded in a struct of this form:
+```go
+type broadcastBitswapRequest struct {
+	Cids []cid.Cid `json:"cids"`
+}
+```
+
+They return structs of this form, respectively:
+```go
+type broadcastBitswapWantResponse struct {
+	Peers []broadcastBitswapWantResponseEntry `json:"peers"`
+}
+
+type broadcastBitswapSendResponseEntry struct {
+	TimestampBeforeSend time.Time `json:"timestamp_before_send"`
+	SendDurationMillis  int64     `json:"send_duration_millis"`
+	Error               *string   `json:"error,omitempty"`
+}
+
+type broadcastBitswapWantResponseEntry struct {
+	broadcastBitswapSendResponseEntry
+	Peer            peer.ID                          `json:"peer"`
+	RequestTypeSent *pbmsg.Message_Wantlist_WantType `json:"request_type_sent,omitempty"`
+}
+
+type broadcastBitswapCancelResponse struct {
+	Peers []broadcastBitswapCancelResponseEntry `json:"peers"`
+}
+
+type broadcastBitswapCancelResponseEntry struct {
+	broadcastBitswapSendResponseEntry
+	Peer peer.ID `json:"peer"`
+}
+```
+
+### `POST /broadcast_want_cancel`
+
+This method performs a Bitswap WANT broadcast followed by a CANCEL broadcast, to the same set of peers, after a given number of seconds.
+This is useful because each broadcast individually takes a while, which makes it difficult to enforce the correct timing between WANT and CANCEL broadcasts from the perspective of an API client.
+
+Request:
+```go
+type broadcastBitswapWantCancelRequest struct {
+	Cids                []cid.Cid `json:"cids"`
+	SecondsBeforeCancel uint32    `json:"seconds_before_cancel"`
+}
+```
+
+Respose:
+```go
+type broadcastBitswapWantCancelResponse struct {
+	Peers []broadcastBitswapWantCancelResponseEntry `json:"peers"`
+}
+
+type broadcastBitswapWantCancelWantEntry struct {
+	broadcastBitswapSendResponseEntry
+	RequestTypeSent *pbmsg.Message_Wantlist_WantType `json:"request_type_sent,omitempty"`
+}
+
+type broadcastBitswapWantCancelResponseEntry struct {
+	Peer         peer.ID                             `json:"peer"`
+	WantStatus   broadcastBitswapWantCancelWantEntry `json:"want_status"`
+	CancelStatus broadcastBitswapSendResponseEntry   `json:"cancel_status"`
+}
+```
+
 ## License
 
 MIT, see [LICENSE](./LICENSE).

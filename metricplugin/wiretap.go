@@ -16,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	ma "github.com/multiformats/go-multiaddr"
+	"go.uber.org/zap"
 )
 
 const (
@@ -280,6 +281,256 @@ func (wt *BitswapWireTap) Shutdown() {
 	// close bitswap senders?
 
 	wt.wg.Wait()
+}
+
+func (wt *BitswapWireTap) broadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
+	status := wt.broadcast(cids, true, 0, false)
+
+	results := make([]BroadcastWantStatus, len(status))
+	for i := range status {
+		results[i] = *status[i].request
+	}
+
+	return results
+}
+
+func (wt *BitswapWireTap) broadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
+	status := wt.broadcast(cids, false, 0, false)
+
+	results := make([]BroadcastCancelStatus, len(status))
+	for i := range status {
+		results[i] = *status[i].cancel
+	}
+
+	return results
+}
+
+func (wt *BitswapWireTap) broadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
+	status := wt.broadcast(cids, true, secondsBetween, true)
+
+	results := make([]BroadcastWantCancelStatus, len(status))
+	for i := range status {
+		results[i].WantStatus = BroadcastWantCancelWantStatus{
+			BroadcastSendStatus: BroadcastSendStatus{
+				TimestampBeforeSend: status[i].request.TimestampBeforeSend,
+				SendDurationMillis:  status[i].request.SendDurationMillis,
+				Error:               status[i].request.Error,
+			},
+			RequestTypeSent: status[i].request.RequestTypeSent,
+		}
+		results[i].CancelStatus = BroadcastSendStatus{
+			TimestampBeforeSend: status[i].cancel.TimestampBeforeSend,
+			SendDurationMillis:  status[i].cancel.SendDurationMillis,
+			Error:               status[i].cancel.Error,
+		}
+		results[i].Peer = status[i].request.Peer
+	}
+
+	return results
+}
+
+type broadcastStatus struct {
+	request *BroadcastWantStatus
+	cancel  *BroadcastCancelStatus
+}
+
+func (wt *BitswapWireTap) broadcast(cids []cid.Cid, want bool, cancelAfterSeconds uint, cancelAfter bool) []broadcastStatus {
+	logger := log.Named("broadcast")
+
+	logger.With("want", want, "cancelAfterSeconds", cancelAfterSeconds, "cancelAfter", cancelAfter).Debugf("starting broadcast")
+
+	before := time.Now()
+
+	// Get a copy of all peer IDs we're tracking
+	wt.connManager.lock.Lock()
+	peerIDs := make([]peer.ID, 0, len(wt.connManager.peers))
+	numSenders := 0
+	for id, p := range wt.connManager.peers {
+		peerIDs = append(peerIDs, id)
+		if p.bitswapSender != nil {
+			numSenders++
+		}
+	}
+	wt.connManager.lock.Unlock()
+	logger.Debugf("Operating on %d peer IDs with %d Bitswap senders currently", len(peerIDs), numSenders)
+
+	// Number of worker goroutines
+	numGoroutines := 8
+	logger.Debugf("Will spawn %d senders", numGoroutines)
+
+	// Set up some plumbing
+	wg := sync.WaitGroup{}
+	collectorWg := sync.WaitGroup{}
+	resultsChan := make(chan broadcastStatus)
+	results := make([]broadcastStatus, 0, numSenders)
+
+	// Spawn a goroutine to collect results
+	collectorWg.Add(1)
+	go func() {
+		defer collectorWg.Done()
+		for res := range resultsChan {
+			results = append(results, res)
+		}
+	}()
+
+	// Spawn goroutines to do the work
+	workChan := make(chan peer.ID)
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			// We allocate and reuse one message to save strain on the GC.
+			msg := bsmsg.New(false)
+			for peerID := range workChan {
+				wt.connManager.lock.Lock()
+				p, ok := wt.connManager.peers[peerID]
+				if !ok {
+					// No longer connected, skip this peer
+					logger.Debugf("Sender: no longer connected to %s, skipping", peerID)
+				}
+				sender := p.bitswapSender
+				wt.connManager.lock.Unlock()
+				if sender == nil {
+					// No sender, skip this peer
+					logger.Debugf("Sender: No sender for %s, skipping", peerID)
+					continue
+				}
+
+				sendBroadcastSinglePeer(want, sender, cids, msg, logger, peerID, resultsChan, cancelAfterSeconds, cancelAfter, &wg)
+			}
+		}(i)
+	}
+
+	// Feed work into workers
+	for _, id := range peerIDs {
+		workChan <- id
+	}
+	close(workChan)
+	logger.Debug("Finished distributing work to senders, now waiting for results")
+
+	// Wait for workers to finish
+	wg.Wait()
+	// Close results channel
+	close(resultsChan)
+	// Wait for collector to finish
+	collectorWg.Wait()
+
+	logger.Debugf("Got %d results, operated on %d peers (with %d Bitswap senders originally), took %s", len(results), len(peerIDs), numSenders, time.Since(before))
+
+	return results
+}
+
+func sendBroadcastSinglePeer(want bool, sender bsnet.MessageSender, cids []cid.Cid, msg bsmsg.BitSwapMessage, logger *zap.SugaredLogger, peerID peer.ID, resultsChan chan broadcastStatus, cancelAfterSeconds uint, cancelAfter bool, wg *sync.WaitGroup) {
+	status := broadcastStatus{}
+
+	if want {
+		wantStatus := sendBitswapWant(sender, msg, logger, peerID, cids)
+		status.request = &wantStatus
+
+		if cancelAfter {
+			// We do this in another goroutine to not lower concurrency by sleeping here.
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				time.Sleep(time.Duration(cancelAfterSeconds) * time.Second)
+
+				cancelStatus := sendBitswapCancel(sender, bsmsg.New(false), logger, peerID, cids)
+				status.cancel = &cancelStatus
+				resultsChan <- status
+			}()
+		} else {
+			resultsChan <- status
+		}
+	} else {
+		cancelStatus := sendBitswapCancel(sender, msg, logger, peerID, cids)
+		status.cancel = &cancelStatus
+		resultsChan <- status
+	}
+}
+
+func sendBitswapWant(sender bsnet.MessageSender, msg bsmsg.BitSwapMessage, logger *zap.SugaredLogger, peerID peer.ID, cids []cid.Cid) BroadcastWantStatus {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	msg.Reset(false)
+
+	reqType := pbmsg.Message_Wantlist_Have
+	if !sender.SupportsHave() {
+		reqType = pbmsg.Message_Wantlist_Block
+	}
+	for _, c := range cids {
+		size := msg.AddEntry(c, 2147483647, reqType, true)
+		if size == 0 {
+			panic("message already contains an entry for this CID")
+		}
+	}
+
+	logger.Debugf("Sender: will send message requesting %s to %s", reqType, peerID)
+
+	tsBefore, elapsed, err := sendBitswapMessage(ctx, sender, msg, logger, peerID)
+
+	requestStatus := BroadcastWantStatus{
+		BroadcastStatus: BroadcastStatus{
+			BroadcastSendStatus: BroadcastSendStatus{
+				TimestampBeforeSend: tsBefore,
+				SendDurationMillis:  elapsed.Milliseconds(),
+				Error:               err,
+			},
+			Peer: peerID,
+		},
+	}
+	if err == nil {
+		requestStatus.RequestTypeSent = &reqType
+	}
+
+	return requestStatus
+}
+
+func sendBitswapCancel(sender bsnet.MessageSender, msg bsmsg.BitSwapMessage, logger *zap.SugaredLogger, peerID peer.ID, cids []cid.Cid) BroadcastCancelStatus {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	msg.Reset(false)
+
+	for _, c := range cids {
+		size := msg.Cancel(c)
+		if size == 0 {
+			panic("message already contains an entry for this CID")
+		}
+	}
+
+	logger.Debugf("Sender: will send message to CANCEL to %s", peerID)
+
+	tsBefore, elapsed, err := sendBitswapMessage(ctx, sender, msg, logger, peerID)
+
+	return BroadcastCancelStatus{
+		BroadcastStatus: BroadcastStatus{
+			BroadcastSendStatus: BroadcastSendStatus{
+				TimestampBeforeSend: tsBefore,
+				SendDurationMillis:  elapsed.Milliseconds(),
+				Error:               err,
+			},
+			Peer: peerID,
+		},
+	}
+}
+
+func sendBitswapMessage(ctx context.Context, sender bsnet.MessageSender, msg bsmsg.BitSwapMessage, logger *zap.SugaredLogger, peerID peer.ID) (time.Time, time.Duration, error) {
+	// We take two timestamps: one before sending, and one after send finishes.
+	// Apparently the remote already starts processing before we return from SendMsg.
+	// That can lead to situations where we receive a response _before_ we timestamp the outgoing
+	// message, if we only use the timestamp after SendMsg.
+	// This then leads to negative response times, which is weird.
+	tsBefore := time.Now()
+	err := sender.SendMsg(ctx, msg)
+	elapsed := time.Since(tsBefore)
+
+	if err != nil {
+		logger.Debugf("Sender: failed to send to %s: %s", peerID, err)
+	} else {
+		logger.Debugf("Sender: successfully sent message to %s", peerID)
+	}
+
+	return tsBefore, elapsed, err
 }
 
 // MessageReceived is called on incoming Bitswap messages.

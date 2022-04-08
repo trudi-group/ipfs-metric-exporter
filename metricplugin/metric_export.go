@@ -12,6 +12,7 @@ import (
 
 	bs "github.com/ipfs/go-bitswap"
 	bsnet "github.com/ipfs/go-bitswap/network"
+	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 	logging "github.com/ipfs/go-log"
@@ -58,6 +59,21 @@ type MetricExporterPlugin struct {
 	closing     chan struct{}
 	closingLock sync.Mutex
 	wg          sync.WaitGroup
+}
+
+// BroadcastBitswapWant implements RPCAPI.
+func (mep *MetricExporterPlugin) BroadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
+	return mep.wiretap.broadcastBitswapWant(cids)
+}
+
+// BroadcastBitswapCancel implements RPCAPI.
+func (mep *MetricExporterPlugin) BroadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
+	return mep.wiretap.broadcastBitswapCancel(cids)
+}
+
+// BroadcastBitswapWantCancel implements RPCAPI.
+func (mep *MetricExporterPlugin) BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
+	return mep.wiretap.broadcastBitswapWantCancel(cids, secondsBetween)
 }
 
 // Subscribe implements MonitoringAPI.

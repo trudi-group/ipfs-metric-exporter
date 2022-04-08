@@ -4,6 +4,7 @@ import (
 	"time"
 
 	bsmsg "github.com/ipfs/go-bitswap/message"
+	pbmsg "github.com/ipfs/go-bitswap/message/pb"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
 	ma "github.com/multiformats/go-multiaddr"
@@ -117,6 +118,22 @@ type RPCAPI interface {
 	// Ping is a no-op.
 	Ping()
 
+	// BroadcastBitswapWant broadcasts WANT_(HAVE|BLOCK) requests for the given
+	// CIDs to all connected peers that support Bitswap.
+	// Which request type to send is chosen by the capabilities of the remote
+	// peer.
+	// This is sent as one message, which is either sent completely or fails.
+	BroadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus
+
+	// BroadcastBitswapCancel broadcasts CANCEL entries for the given CIDs to
+	// all connected peers that support Bitswap.
+	// This is sent as one message, which is either sent completely or fails.
+	BroadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus
+
+	// BroadcastBitswapWantCancel broadcasts WANT_(HAVE|BLOCK) requests for the
+	// given CIDs, followed by CANCEL entries after a given time to all
+	// connected peers that support Bitswap.
+	BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus
 }
 
 // PluginAPI describes the functionality provided by this monitor to remote
@@ -125,4 +142,52 @@ type PluginAPI interface {
 	MonitoringAPI
 
 	RPCAPI
+}
+
+// BroadcastSendStatus contains basic information about a send operation to
+// a single peer as part of a Bitswap broadcast.
+type BroadcastSendStatus struct {
+	TimestampBeforeSend time.Time `json:"timestamp_before_send"`
+	SendDurationMillis  int64     `json:"send_duration_millis"`
+	Error               error     `json:"error,omitempty"`
+}
+
+// BroadcastStatus contains additional basic information about a send operation
+// to a single peer as part of a Bitswap broadcast.
+type BroadcastStatus struct {
+	BroadcastSendStatus
+	Peer peer.ID `json:"peer"`
+	// Underlay addresses of the peer we were connected to when the message
+	// was sent, or empty if there was an error.
+	ConnectedAddresses []ma.Multiaddr `json:"connected_addresses,omitempty"`
+}
+
+// BroadcastWantStatus describes the status of a send operation to a single
+// peer as part of a Bitswap WANT broadcast.
+type BroadcastWantStatus struct {
+	BroadcastStatus
+	RequestTypeSent *pbmsg.Message_Wantlist_WantType `json:"request_type_sent,omitempty"`
+}
+
+// BroadcastCancelStatus describes the status of a send operation to a single
+// peer as part of a Bitswap CANCEL broadcast.
+type BroadcastCancelStatus struct {
+	BroadcastStatus
+}
+
+// BroadcastWantCancelWantStatus contains information about the send-WANT
+// operation to a single peer as part of a Bitswap WANT+CANCEL broadcast.
+type BroadcastWantCancelWantStatus struct {
+	BroadcastSendStatus
+	RequestTypeSent *pbmsg.Message_Wantlist_WantType `json:"request_type_sent,omitempty"`
+}
+
+// BroadcastWantCancelStatus describes the status of a send operation to a
+// single peer as part of a Bitswap WANT+CANCEL broadcast.
+type BroadcastWantCancelStatus struct {
+	Peer               peer.ID        `json:"peer"`
+	ConnectedAddresses []ma.Multiaddr `json:"connected_addresses,omitempty"`
+
+	WantStatus   BroadcastWantCancelWantStatus `json:"want_status"`
+	CancelStatus BroadcastSendStatus           `json:"cancel_status"`
 }
