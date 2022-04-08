@@ -38,3 +38,9 @@ var wiretapConnectionCount = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "plugin_metric_export_wiretap_connections",
 	Help: "Number of connections tracked via the wiretap, based on connection events reported by the IPFS node.",
 })
+
+var wiretapSentBytes = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name: "plugin_metric_export_wiretap_sent_bytes",
+	Help: "Number of bytes sent via the wiretap TCP interface, by pre/post compression.",
+},
+	[]string{"compressed"})

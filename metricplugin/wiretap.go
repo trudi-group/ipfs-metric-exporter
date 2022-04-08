@@ -74,6 +74,62 @@ type subscribers struct {
 	lock        sync.RWMutex
 }
 
+func (s *subscribers) subscribe(sub EventSubscriber) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	// TODO we could make this sorted and then binary search, but not worth now.
+	id := sub.ID()
+	for _, sub := range s.subscribers {
+		if sub.ID() == id {
+			return ErrAlreadySubscribed
+		}
+	}
+
+	s.subscribers = append(s.subscribers, sub)
+	return nil
+}
+
+func (s *subscribers) unsubscribe(sub EventSubscriber) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	// TODO we could make this sorted and then binary search, but not worth now.
+	id := sub.ID()
+	for i, sub := range s.subscribers {
+		if sub.ID() == id {
+			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
+			return
+		}
+	}
+}
+
+func (s *subscribers) publishBitswapMessage(timestamp time.Time, peer peer.ID, msg BitswapMessage) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	log.Debugf("publishing Bitswap message to %d subscribers", len(s.subscribers))
+	for i := len(s.subscribers) - 1; i >= 0; i-- {
+		if err := s.subscribers[i].BitswapMessageReceived(timestamp, peer, msg); err != nil {
+			// Remove from subscribers
+			log.Warnf("removing faulty subscriber %s", s.subscribers[i].ID())
+			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
+		}
+	}
+}
+
+func (s *subscribers) publishConnectionEvent(timestamp time.Time, peer peer.ID, connEvent ConnectionEvent) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	log.Debugf("publishing connection event to %d subscribers", len(s.subscribers))
+	for i := len(s.subscribers) - 1; i >= 0; i-- {
+		if err := s.subscribers[i].ConnectionEventRecorded(timestamp, peer, connEvent); err != nil {
+			// Remove from subscribers
+			log.Warnf("removing faulty subscriber %s", s.subscribers[i].ID())
+			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
+		}
+	}
+}
+
 // NewWiretap creates a new Bitswap Wiretap and network Notifiee.
 // This will spawn goroutines to log stats and connect to peers via Bitswap.
 // Use the Shutdown method to shut down cleanly.
@@ -200,33 +256,11 @@ func (wt *BitswapWireTap) bitswapConnectionLoop() {
 }
 
 func (wt *BitswapWireTap) subscribe(subscriber EventSubscriber) error {
-	wt.subscribers.lock.Lock()
-	defer wt.subscribers.lock.Unlock()
-
-	// TODO we could make this sorted and then binary search, but not worth now.
-	id := subscriber.ID()
-	for _, sub := range wt.subscribers.subscribers {
-		if sub.ID() == id {
-			return ErrAlreadySubscribed
-		}
-	}
-
-	wt.subscribers.subscribers = append(wt.subscribers.subscribers, subscriber)
-	return nil
+	return wt.subscribers.subscribe(subscriber)
 }
 
 func (wt *BitswapWireTap) unsubscribe(subscriber EventSubscriber) {
-	wt.subscribers.lock.Lock()
-	defer wt.subscribers.lock.Unlock()
-
-	// TODO we could make this sorted and then binary search, but not worth now.
-	id := subscriber.ID()
-	for i, sub := range wt.subscribers.subscribers {
-		if sub.ID() == id {
-			wt.subscribers.subscribers = append(wt.subscribers.subscribers[:i], wt.subscribers.subscribers[i+1:]...)
-			return
-		}
-	}
+	wt.subscribers.unsubscribe(subscriber)
 }
 
 // Shutdown shuts down the wiretap cleanly.
@@ -299,13 +333,8 @@ func (wt *BitswapWireTap) MessageReceived(peerID peer.ID, msg bsmsg.BitSwapMessa
 	}
 	log.Debugf("Received Bitswap message from peer %s: %+v", peerID, msgToLog)
 
-	// This _will_ block if one of the subscribers blocks.
-	// We'll have to see if that's a problem.
-	wt.subscribers.lock.RLock()
-	defer wt.subscribers.lock.RUnlock()
-	for _, sub := range wt.subscribers.subscribers {
-		sub.BitswapMessageReceived(now, peerID, msgToLog)
-	}
+	// Notify subscribers.
+	wt.subscribers.publishBitswapMessage(now, peerID, msgToLog)
 }
 
 // MessageSent is called on outgoing Bitswap messages.
@@ -331,13 +360,8 @@ func (wt *BitswapWireTap) notifyConnEvent(connected bool, conn network.Conn) {
 	}
 	p := conn.RemotePeer()
 
-	// This _will_ block if one of the subscribers blocks.
-	// We'll have to see if that's a problem.
-	wt.subscribers.lock.RLock()
-	defer wt.subscribers.lock.RUnlock()
-	for _, sub := range wt.subscribers.subscribers {
-		sub.ConnectionEventRecorded(now, p, eventToLog)
-	}
+	// Notify subscribers.
+	wt.subscribers.publishConnectionEvent(now, p, eventToLog)
 }
 
 // Connected is called when a connection is opened.
@@ -441,7 +465,7 @@ func (wt *BitswapWireTap) connectBitswap(remotePeer peer.ID, waitTime time.Durat
 
 	// The connection is still alive, and we don't have a sender yet.
 	// Try to create a sender and add it to the peer.
-	// We don't hold the connManager lock the entire time because connecting
+	// We don't hold the connManager closingLock the entire time because connecting
 	// can take some time, e.g. if the connection is actually dead.
 
 	// Leave this blank to use defaults
