@@ -12,6 +12,7 @@ import (
 
 	bs "github.com/ipfs/go-bitswap"
 	bsnet "github.com/ipfs/go-bitswap/network"
+	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/plugin"
 	logging "github.com/ipfs/go-log"
@@ -51,30 +52,62 @@ type MetricExporterPlugin struct {
 	// Used for clean shutdown.
 	tcpServer *tcpServer
 
+	// A reference to the HTTP server, used for clean shutdown.
+	httpServer *httpServer
+
 	// Lifecycle management
 	closing     chan struct{}
 	closingLock sync.Mutex
 	wg          sync.WaitGroup
 }
 
-// Subscribe implements PluginAPI.
+// BroadcastBitswapWant implements RPCAPI.
+func (mep *MetricExporterPlugin) BroadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
+	return mep.wiretap.broadcastBitswapWant(cids)
+}
+
+// BroadcastBitswapCancel implements RPCAPI.
+func (mep *MetricExporterPlugin) BroadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
+	return mep.wiretap.broadcastBitswapCancel(cids)
+}
+
+// BroadcastBitswapWantCancel implements RPCAPI.
+func (mep *MetricExporterPlugin) BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
+	return mep.wiretap.broadcastBitswapWantCancel(cids, secondsBetween)
+}
+
+// Subscribe implements MonitoringAPI.
 func (mep *MetricExporterPlugin) Subscribe(subscriber EventSubscriber) error {
 	// This is racy, but probably fine
 	if mep.wiretap != nil {
 		return mep.wiretap.subscribe(subscriber)
 	}
+	// This should never happen.
 	panic("Subscribe called but Bitswap Wiretap not set up")
 }
 
-// Unsubscribe implements PluginAPI.
+// Unsubscribe implements MonitoringAPI.
 func (mep *MetricExporterPlugin) Unsubscribe(subscriber EventSubscriber) {
 	// This is racy, but probably fine
 	if mep.wiretap != nil {
 		mep.wiretap.unsubscribe(subscriber)
 	}
+	// This should never happen.
+	panic("Unsubscribe called but Bitswap Wiretap not set up")
 }
 
-// Ping implements PluginAPI.
+// MonitoringAddresses implements RPCAPI.
+func (mep *MetricExporterPlugin) MonitoringAddresses() []string {
+	var addrs []string
+	if mep.tcpServer != nil {
+		for _, l := range mep.tcpServer.listeners {
+			addrs = append(addrs, l.Addr().String())
+		}
+	}
+	return addrs
+}
+
+// Ping implements RPCAPI.
 func (*MetricExporterPlugin) Ping() {}
 
 // Config contains all values configured via the standard IPFS config section on plugins.
@@ -87,9 +120,12 @@ type Config struct {
 	// AVs are somewhat arbitrarily chosen strings and clutter prometheus.
 	AgentVersionCutOff int `json:"AgentVersionCutOff"`
 
-	// Configuration of the TCP server config.
-	// If this is nil, the TCP logging will not be activated.
+	// Configuration of the TCP server.
+	// If this is nil, Bitswap monitoring will not be exposed via TCP.
 	TCPServerConfig *TCPServerConfig `json:"TCPServerConfig"`
+
+	// Configuration of the HTTP server.
+	HTTPServerConfig HTTPServerConfig `json:"HTTPServerConfig"`
 }
 
 // Name returns the name of this plugin.
@@ -101,7 +137,7 @@ func (*MetricExporterPlugin) Name() string {
 // Version returns the version of this plugin.
 // This is part of the `plugin.Plugin` interface.
 func (*MetricExporterPlugin) Version() string {
-	return "0.2.0"
+	return "0.3.0"
 }
 
 // Init initializes this plugin with the given environment.
@@ -130,7 +166,7 @@ func (mep *MetricExporterPlugin) Init(env *plugin.Environment) error {
 	}
 
 	if pConf.TCPServerConfig == nil {
-		log.Info("TCPServerConfig is nil, TCP logging disabled.")
+		log.Info("TCPServerConfig is nil, TCP pub/sub interface disabled.")
 	}
 
 	mep.conf = pConf
@@ -156,6 +192,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	prometheus.MustRegister(wiretapBitswapSenderCount)
 	prometheus.MustRegister(wiretapPeerCount)
 	prometheus.MustRegister(wiretapConnectionCount)
+	prometheus.MustRegister(wiretapSentBytes)
 
 	// Get the bitswap instance from the interface.
 	bitswapEngine, ok := mep.api.Exchange.(*bs.Bitswap)
@@ -189,6 +226,7 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 		go mep.populatePrometheus(time.Duration(mep.conf.PopulatePrometheusInterval) * time.Second)
 	}
 
+	// Start TCP server for Bitswap monitoring.
 	if mep.conf.TCPServerConfig != nil {
 		tcpServer, err := newTCPServer(mep, *mep.conf.TCPServerConfig)
 		if err != nil {
@@ -196,7 +234,24 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 		}
 		mep.tcpServer = tcpServer
 
-		go mep.tcpServer.listenAndServe()
+		mep.tcpServer.StartServer()
+
+		for _, l := range tcpServer.listeners {
+			fmt.Printf("Metric Export TCP server listening on %s\n", l.Addr())
+		}
+	}
+
+	// Start HTTP server.
+	httpServer, err := newHTTPServer(mep, mep.conf.HTTPServerConfig)
+	if err != nil {
+		return errors.Wrap(err, "unable to start HTTP server")
+	}
+	mep.httpServer = httpServer
+
+	mep.httpServer.StartServer()
+
+	for _, l := range httpServer.listeners {
+		fmt.Printf("Metric Export HTTP server listening on %s\n", l.Addr())
 	}
 
 	fmt.Println("Metric Export Plugin started")
@@ -213,25 +268,26 @@ func getUnexportedField(field reflect.Value) interface{} {
 // This is called to cleanly shut down the plugin when the daemon exits.
 // This is idempotent.
 func (mep *MetricExporterPlugin) Close() error {
-	// This is potentially racy, but probably not in our case.
+	mep.closingLock.Lock()
+	select {
+	case <-mep.closing:
+		// Already closed/closing, no-op.
+		return nil
+	default:
+		close(mep.closing)
+	}
+	mep.closingLock.Unlock()
+
 	if mep.tcpServer != nil {
 		mep.tcpServer.Shutdown()
 	}
 	if mep.wiretap != nil {
 		mep.wiretap.Shutdown()
 	}
+	mep.httpServer.Shutdown()
 
-	mep.closingLock.Lock()
-	select {
-	case <-mep.closing:
-	// Already closed/closing
-	default:
-		close(mep.closing)
-	}
-	mep.closingLock.Unlock()
-
+	// Wait for everything to be done.
 	mep.wg.Wait()
-
 	return nil
 }
 
