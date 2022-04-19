@@ -4,6 +4,24 @@ An IPFS plugin to export additional metrics and enable real-time analysis of Bit
 
 ## Building
 
+__You must build both the plugin and the host go-ipfs from the same sources, using the same compiler.__
+The recommended way of building this plugin with a matching go-ipfs version is within a Docker build environment.
+Alternatively, see below for background information on the process and manual build instructions.
+
+### Docker
+
+You can build this project together with a matching go-ipfs executable within Docker.
+This is nice, because you get reproducible, matching binaries, compiled with Go 1.16 on Debian bullseye.
+Building on bullseye gives us a libc version which is a bit older.
+This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
+
+The [builder Dockerfile](./Dockerfile.builder) implements a builder stage.
+The resulting binaries are placed in `/usr/local/bin/ipfs/` inside the image.
+
+The [build-in-docker.sh](./build-in-docker.sh) script executes the builder and copies the produced binaries to the `out/` directory of the project.
+
+### Manually
+
 Due to a [bug in the Go compiler](https://github.com/cespare/xxhash/issues/54) it is not possible to build plugins
 correctly using Go 1.17.
 __You need to use Go 1.16 to build both this plugin and the IPFS binary.__
@@ -25,18 +43,6 @@ Use `make build` to build the plugin and `make install` to copy the compiled plu
 Manually, building with `go build -buildmode=plugin -o mexport.so` should also work.
 This will produce a `mexport.so` library which needs to be placed in the IPFS plugin directory, which is
 `$IPFS_PATH/plugins` by default.
-
-### Docker
-
-You can build this project together with a matching go-ipfs executable within Docker.
-This is nice, because you get reproducible, matching binaries, compiled with Go 1.16 on Debian bullseye.
-Building on bullseye gives us a libc version which is a bit older.
-This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
-
-The [builder Dockerfile](./Dockerfile.builder) implements a builder stage.
-The resulting binaries are placed in `/usr/local/bin/ipfs/` inside the image.
-
-The [build-in-docker.sh](./build-in-docker.sh) script executes the builder and copies the produced binaries to the `out/` directory of the project.
 
 ## Configuration
 
@@ -84,7 +90,11 @@ The `ListenAddress` field configures the endpoint on which to listen.
 
 ## Running
 
-Placing the library in the IPFS plugin path and relaunching the daemon should load and run the plugin.
+In order to run with the plugin, you need to
+1. Copy the compiled plugin to the IPFS plugin directory (which may need to be created).
+2. Edit the IPFS configuration to configure the plugin.
+3. Launch the __matching go-ipfs__ in daemon mode.
+
 If you plan on running a large monitoring node as per [this paper](https://arxiv.org/abs/2104.09202) it is recommended
 to increase the limit of file descriptors for the IPFS daemon.
 The IPFS daemon attempts to do this on its own, but only up to 8192 FDs by default.
@@ -96,7 +106,7 @@ Setting `IPFS_FD_MAX="100000"` should be sufficient.
 This plugin uses the usual IPFS logging API.
 To see logs produced by this plugin, either set an appropriate global log level (the default is `error`):
 ```
-IPFS_LOGGING="info" ipfs daemon
+IPFS_LOGGING="info" ipfs daemon | grep -a "metric-export"
 ```
 
 Or, after having started the daemon, configure just this component to emit logs at a certain level or above:
