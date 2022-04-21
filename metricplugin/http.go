@@ -31,6 +31,7 @@ const (
 	APIBroadcastWantPath       = APIBasePath + "/broadcast_want"
 	APIBroadcastCancelPath     = APIBasePath + "/broadcast_cancel"
 	APIBroadcastWantCancelPath = APIBasePath + "/broadcast_want_cancel"
+	APISamplePeerMetadataPath  = APIBasePath + "/sample_peer_metadata"
 )
 
 type httpServer struct {
@@ -129,12 +130,14 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 			"GET  %s returns a list of addresses on which the monitor is listening for Bitswap monitoring connections\n"+
 			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs\n"+
 			"POST %s broadcasts a Bitswap CANCEL message for a given list of CIDs\n"+
-			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs, followed by a CANCEL message after a given amount of time",
+			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs, followed by a CANCEL message after a given amount of time\n"+
+			"GET  %s returns information about peers from the peerstore, and connection state\n",
 			APIPingPath,
 			APIMonitoringAddressesPath,
 			APIBroadcastWantPath,
 			APIBroadcastCancelPath,
-			APIBroadcastWantCancelPath)
+			APIBroadcastWantCancelPath,
+			APISamplePeerMetadataPath)
 	})
 
 	router.GET(APIPingPath,
@@ -151,6 +154,9 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 
 	router.POST(APIBroadcastWantCancelPath,
 		s.buildHandler(broadcastBitswapWantCancel(s.api)))
+
+	router.GET(APISamplePeerMetadataPath,
+		s.buildHandler(samplePeerMetadata(s.api)))
 
 	return router
 }
@@ -383,6 +389,14 @@ type broadcastBitswapWantCancelRequest struct {
 	SecondsBeforeCancel uint32    `json:"seconds_before_cancel"`
 }
 
+type samplePeerMetadataResponse struct {
+	Timestamp    time.Time      `json:"timestamp"`
+	NumConns     int            `json:"num_connections"`
+	PeerMetadata []PeerMetadata `json:"peer_metadata"`
+}
+
+func (samplePeerMetadataResponse) response() {}
+
 func ping(api RPCAPI) apiFunction {
 	return func(_ *http.Request, _ httprouter.Params) (response, error) {
 		api.Ping()
@@ -509,5 +523,18 @@ func broadcastBitswapWantCancel(api RPCAPI) apiFunction {
 		}
 
 		return broadcastBitswapWantCancelResponse{Peers: resp}, nil
+	}
+}
+
+func samplePeerMetadata(api RPCAPI) apiFunction {
+	return func(_ *http.Request, _ httprouter.Params) (response, error) {
+		pmd, conns := api.SamplePeerMetadata()
+		ts := time.Now().UTC()
+
+		return samplePeerMetadataResponse{
+			Timestamp:    ts,
+			NumConns:     conns,
+			PeerMetadata: pmd,
+		}, nil
 	}
 }

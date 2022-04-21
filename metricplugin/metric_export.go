@@ -17,6 +17,7 @@ import (
 	"github.com/ipfs/go-ipfs/plugin"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -109,6 +110,55 @@ func (mep *MetricExporterPlugin) MonitoringAddresses() []string {
 
 // Ping implements RPCAPI.
 func (*MetricExporterPlugin) Ping() {}
+
+// SamplePeerMetadata implements RPCAPI.
+func (mep *MetricExporterPlugin) SamplePeerMetadata() ([]PeerMetadata, int) {
+	// Get number of connections and peers in proximity,
+	// to have somewhat-consistent values.
+	peers := mep.api.Peerstore.Peers()
+	numConns := len(mep.api.PeerHost.Network().Conns())
+	metadata := make([]PeerMetadata, 0, len(peers))
+	log.Debugf("SamplePeerMetadata: have information about %d peers, %d connections", len(peers), numConns)
+
+	for _, p := range peers {
+		pmd := PeerMetadata{ID: p}
+		pmd.Multiaddrs = mep.api.Peerstore.Addrs(p)
+		pmd.Connectedness = mep.api.PeerHost.Network().Connectedness(p)
+
+		if pmd.Connectedness == network.Connected {
+			conns := mep.api.PeerHost.Network().ConnsToPeer(p)
+			for _, con := range conns {
+				pmd.ConnectedMultiaddrs = append(pmd.ConnectedMultiaddrs, con.RemoteMultiaddr())
+			}
+		}
+
+		protocols, _ := mep.api.Peerstore.GetProtocols(p)
+		if len(protocols) != 0 {
+			pmd.Protocols = protocols
+		}
+
+		ver, err := mep.api.Peerstore.Get(p, "AgentVersion")
+		if err != nil {
+			log.Debugf("unable to get AgentVersion for peer %s: %s", p, err)
+			if err == peerstore.ErrNotFound {
+				s := "N/A"
+				pmd.AgentVersion = &s
+			}
+		} else {
+			s := ver.(string)
+			pmd.AgentVersion = &s
+		}
+
+		latency := mep.api.Peerstore.LatencyEWMA(p)
+		if latency != 0 {
+			pmd.LatencyEWMA = &latency
+		}
+
+		metadata = append(metadata, pmd)
+	}
+
+	return metadata, numConns
+}
 
 // Config contains all values configured via the standard IPFS config section on plugins.
 type Config struct {
