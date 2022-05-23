@@ -1,4 +1,4 @@
-name: CI
+name: Lint_Build_Test
 on:
   # See the documentation for more intricate event dispatch here:
   # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#on

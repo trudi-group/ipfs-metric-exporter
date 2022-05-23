@@ -1,0 +1,22 @@
+name: Build_Release
+on:
+  # See the documentation for more intricate event dispatch here:
+  # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#on
+  push:
+    branches:
+    - "master"
+jobs:
+  build:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build Docker Image
+      run: ./build-in-docker.sh
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with: 
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        title: "Dev Build"
+        automatic_release_tag: "latest"
+        files: out/*
