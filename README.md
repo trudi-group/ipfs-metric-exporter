@@ -11,7 +11,7 @@ Alternatively, see below for background information on the process and manual bu
 ### Docker
 
 You can build this project together with a matching go-ipfs executable within Docker.
-This is nice, because you get reproducible, matching binaries, compiled with Go 1.16 on Debian bullseye.
+This is nice, because you get reproducible, matching binaries, compiled with Go 1.18 on Debian bullseye.
 Building on bullseye gives us a libc version which is a bit older.
 This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
 
@@ -24,15 +24,15 @@ The [build-in-docker.sh](./build-in-docker.sh) script executes the builder and c
 
 Due to a [bug in the Go compiler](https://github.com/cespare/xxhash/issues/54) it is not possible to build plugins
 correctly using Go 1.17.
-__You need to use Go 1.16 to build both this plugin and the IPFS binary.__
+__You need to use Go 1.18 to build both this plugin and the IPFS binary.__
 
 This is an internal plugin, which needs to be built against the sources that produced the `ipfs` binary this plugin will
 plug into.
 __The `ipfs` binary and this plugin must be built from/against the same IPFS sources, using the same version of the Go
 compiler.__
-We build and run against go-ipfs v0.12.0, using Go 1.16 due to aforementioned bug in 1.17.
+We build and run against go-ipfs v0.13.0, using Go 1.18 due to aforementioned bug in 1.17.
 You can build against either
-1. the official, online `go-ipfs` source (and recompile IPFS with Go 1.16) or
+1. the official, online `go-ipfs` source (and recompile IPFS) or
 2. a local fork, in which case you need to a `replace` directive to the `go.mod` file.
 
 There is a [Makefile](./Makefile) which does a lot of this for you.
