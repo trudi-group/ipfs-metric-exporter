@@ -6,6 +6,7 @@ import (
 	bsmsg "github.com/ipfs/go-bitswap/message"
 	pbmsg "github.com/ipfs/go-bitswap/message/pb"
 	"github.com/ipfs/go-cid"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
@@ -134,6 +135,12 @@ type RPCAPI interface {
 	// given CIDs, followed by CANCEL entries after a given time to all
 	// connected peers that support Bitswap.
 	BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus
+
+	// SamplePeerMetadata returns information about seen/connected Peers.
+	// It returns information about all peers of the peerstore (including past
+	// peers not currently connected) as well as the number of currently
+	// established connections.
+	SamplePeerMetadata() ([]PeerMetadata, int)
 }
 
 // PluginAPI describes the functionality provided by this monitor to remote
@@ -190,4 +197,46 @@ type BroadcastWantCancelStatus struct {
 
 	WantStatus   BroadcastWantCancelWantStatus `json:"want_status"`
 	CancelStatus BroadcastSendStatus           `json:"cancel_status"`
+}
+
+// PeerMetadata holds metadata about a peer.
+// This applies to both currently-connected as well as past peers.
+// For peers that are not currently connected, the  ConnectedMultiaddrs field
+// will be nil.
+// The AgentVersion and LatencyEWMA are optional. They are usually present for
+// connected peers. For no-longer-connected peers, these hold the last known
+// value.
+type PeerMetadata struct {
+	// Metadata about every peer.
+
+	// The ID of the peer.
+	ID peer.ID `json:"peer_id"`
+	// The connectedness, i.e. current connection status.
+	Connectedness network.Connectedness `json:"connectedness"`
+	// A list of known valid multiaddresses for this peer.
+	// If the peer is not currently connected, this information might be
+	// outdated.
+	Multiaddrs []ma.Multiaddr `json:"multiaddresses"`
+	// A list of known supported protocols for this peer.
+	// If the peer is not currently connected, this information might be
+	// outdated.
+	Protocols []string `json:"protocols"`
+
+	// Metadata about seen or connected peers, optional.
+
+	// Agent version of the peer.
+	// If we are no longer connected, this reports the last-seen agent version.
+	// If the agent version is not (yet) known, this is "N/A".
+	// If this is null, some other error occurred (which hopefully never
+	// happens).
+	AgentVersion *string `json:"agent_version"`
+	// The EWMA of latencies to the peer.
+	// If we are no longer connected, this reports the last-known average.
+	// If this is null, we don't have latency information for the peer yet.
+	LatencyEWMA *time.Duration `json:"latency_ewma_ns"`
+
+	// Metadata about connected peers.
+
+	// A list of multiaddresses to which we currently hold a connection.
+	ConnectedMultiaddrs []ma.Multiaddr `json:"connected_multiaddresses"`
 }
