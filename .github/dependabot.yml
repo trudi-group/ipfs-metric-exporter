@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    ignore:
+      # These are tied to the IPFS version we target
+      - dependency-name: "github.com/ipfs/go-bitswap"
+      - dependency-name: "github.com/ipfs/go-cid"
+      - dependency-name: "github.com/ipfs/go-ipfs"
+      - dependency-name: "github.com/ipfs/go-log"
+      - dependency-name: "github.com/libp2p/go-libp2p-core"
+      - dependency-name: "github.com/libp2p/go-msgio"
+      - dependency-name: "github.com/multiformats/go-multiaddr"
+      - dependency-name: "github.com/prometheus/client_golang"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
