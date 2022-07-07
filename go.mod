@@ -8,7 +8,7 @@ require (
 	github.com/ipfs/go-ipfs v0.13.0
 	github.com/ipfs/go-log v1.0.5
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/libp2p/go-buffer-pool v0.0.2
+	github.com/libp2p/go-buffer-pool v0.1.0
 	github.com/libp2p/go-libp2p-core v0.15.1
 	github.com/libp2p/go-msgio v0.2.0
 	github.com/multiformats/go-multiaddr v0.5.0
