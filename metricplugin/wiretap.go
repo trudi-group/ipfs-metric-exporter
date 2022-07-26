@@ -11,7 +11,7 @@ import (
 	pbmsg "github.com/ipfs/go-bitswap/message/pb"
 	bsnet "github.com/ipfs/go-bitswap/network"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/kubo/core"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
