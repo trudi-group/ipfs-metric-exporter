@@ -13,10 +13,10 @@ updates:
       # These are tied to the IPFS version we target
       - dependency-name: "github.com/ipfs/go-bitswap"
       - dependency-name: "github.com/ipfs/go-cid"
-      - dependency-name: "github.com/ipfs/go-ipfs"
       - dependency-name: "github.com/ipfs/go-log"
+      - dependency-name: "github.com/ipfs/kubo"
+      - dependency-name: "github.com/libp2p/go-buffer-pool"
       - dependency-name: "github.com/libp2p/go-libp2p-core"
-      - dependency-name: "github.com/libp2p/go-msgio"
       - dependency-name: "github.com/multiformats/go-multiaddr"
       - dependency-name: "github.com/prometheus/client_golang"
 
