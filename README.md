@@ -141,7 +141,7 @@ Thus, on the wire, each message looks like this:
 <size of following message in bytes, 4 bytes big endian><gzipped JSON-encoded message>
 ```
 Each message is gzipped individually, i.e., the state of the encoder is reset for each message.
-There is a [client implementation in Rust](https://github.com/mrd0ll4r/ipfs-tools/tree/master/bitswap-monitoring-client-lib) which works with this.
+There is a [client implementation in Rust](https://github.com/trudi-group/ipfs-tools/tree/master/ipfs-monitoring-plugin-client) which works with this.
 
 A connection starts with an **uncompressed** handshake, during which both sides send a version message of this form:
 ```go
