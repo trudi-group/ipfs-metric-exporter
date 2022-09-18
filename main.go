@@ -1,3 +1,5 @@
+// Package main implements a kubo (go-ipfs) plugin to export additional metrics
+// and Bitswap traffic from an IPFS node.
 package main
 
 import (
