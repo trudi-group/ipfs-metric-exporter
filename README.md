@@ -11,7 +11,7 @@ Alternatively, see below for background information on the process and manual bu
 ### Docker
 
 You can build this project together with a matching kubo executable within Docker.
-This is nice, because you get reproducible, matching binaries, compiled with Go 1.18 on Debian bullseye.
+This is nice, because you get reproducible, matching binaries, compiled with Go 1.19 on Debian bullseye.
 Building on bullseye gives us a libc version which is a bit older.
 This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
 
@@ -24,13 +24,13 @@ The [build-in-docker.sh](./build-in-docker.sh) script executes the builder and c
 
 Due to a [bug in the Go compiler](https://github.com/cespare/xxhash/issues/54) it is not possible to build plugins
 correctly using Go 1.17.
-__You need to use Go 1.18 to build both this plugin and the IPFS binary.__
+__You need to use Go 1.18 or later to build both this plugin and the IPFS binary.__
 
 This is an internal plugin, which needs to be built against the sources that produced the `ipfs` binary this plugin will
 plug into.
 __The `ipfs` binary and this plugin must be built from/against the same IPFS sources, using the same version of the Go
 compiler.__
-We build and run against kubo v0.14.0, using Go 1.18 due to aforementioned bug in 1.17.
+We build and run against kubo v0.16.0, using Go 1.19.
 You can build against either
 1. the official, online `kubo` source (and recompile IPFS) or
 2. a local fork, in which case you need to a `replace` directive to the `go.mod` file.
@@ -56,11 +56,8 @@ This plugin can be configured using the usual IPFS configuration.
         "Config": {
           "PopulatePrometheusInterval": 10,
           "AgentVersionCutOff": 20,
-          "TCPServerConfig": {
-            "ListenAddresses": [
-                "localhost:8181"
-            ]
-          },
+          "AMQPServerAddress": "amqp://localhost:5672",
+          "MonitorName": "<some name, defaults to hostname>"
           "HTTPServerConfig": {
             "ListenAddresses": [
                 "localhost:8432"
@@ -87,14 +84,16 @@ The plugin collects metrics about the agent versions of connected peers.
 This value configures a cutoff for how many agent version strings should be reported to prometheus.
 The remainder (everything that doesn't fit within the cutoff) is summed and reported as `others` to prometheus.
 
-### `TCPServerConfig`
+### `AMQPServerAddress`
 
-This configures the TCP server used to export a pubsub mechanism for Bitswap monitoring in real time.
-If this section is missing or `null`, the TCP server will not be started.
-Bitswap monitoring is performed regardless.
-See below on how the TCP server works.
+This configures the AMQP server to connect to in order to publish Bitswap messages and connection events.
+If this is left empty, no real-time processing of Bitswap messages will take place.
 
-The `ListenAddresses` field configures the endpoints on which to listen.
+### `MonitorName`
+
+Any events published to AMQP are tagged with the name of the origin monitor.
+This configures that name.
+If left empty, defaults to the hostname.
 
 ### `HTTPServerConfig`
 
@@ -132,55 +131,17 @@ ipfs log level metric-export info
 ipfs log tail # or something else?
 ```
 
-## The TCP Server for Real-Time Bitswap Monitoring
+## Real-Time Monitoring via RabbitMQ
 
-This plugin comes with a TCP server that pushes Bitswap monitoring messages to clients.
-The protocol consists of 4-byte, big endian, framed, gzipped, JSON-encoded messages.
-Thus, on the wire, each message looks like this:
-```
-<size of following message in bytes, 4 bytes big endian><gzipped JSON-encoded message>
-```
-Each message is gzipped individually, i.e., the state of the encoder is reset for each message.
+This plugin pushes all messages it receives via Bitswap, as well as connection events, to a RabbitMQ server.
+The topic exchange `ipfs.passive_monitoring` is used for this.
+Any publishing made to RabbitMQ has a gzipped, JSON-encoded array as its payload.
+Each publishing is gzipped individually, i.e., the state of the encoder is reset for each array of events.
+
+The exchange topics are of the form `monitor.<monitor name>.(bitswap_message|conn_events)`.
+
 There is a [client implementation in Rust](https://github.com/trudi-group/ipfs-tools/tree/master/ipfs-monitoring-plugin-client) which works with this.
 
-A connection starts with an **uncompressed** handshake, during which both sides send a version message of this form:
-```go
-// A version message, exchanged between client and server once, immediately
-// after the connection is established.
-type versionMessage struct {
-	Version int `json:"version"`
-}
-```
-This is JSON-encoded and framed.
-Both sides verify that the version matches.
-If there is a mismatch, the connection is closed.
-The current version of the API, as described here, is `3`.
-
-After the handshake succeeds, clients are automatically subscribed to all Bitswap monitoring messages.
-There is a backpressure mechanism: Slow clients will not receive all messages.
-
-### Changelog
-
-Version 1 is the initial version of the format.
-It contains the framed messages, requests, and responses.
-
-Version 2 introduces block presences (see the [Bitswap spec](https://github.com/ipfs/go-bitswap/blob/master/docs/how-bitswap-works.md)) to pushed Bitswap messages.
-
-Version 3 introduces gzipping of individual messages and removes all API functionality.
-Clients are now automatically subscribed.
-
-### Messages from Plugin -> Client
-
-Messages originating from this plugin have the following format:
-```go
-// The type of messages sent out via TCP.
-type outgoingTCPMessage struct {
-	// If Event is not nil, this message is a pushed event.
-	Event *event `json:"event,omitempty"`
-}
-```
-
-A client is, by default, subscribed to events emitted by this plugin.
 Events sent by this plugin are of this format:
 ```go
 // The type sent to via TCP for pushed events.
@@ -200,9 +161,14 @@ type event struct {
 }
 ```
 
-See also the sources: [wire protocol](metricplugin/tcp_client.go) and [server](metricplugin/tcp_server.go).
-
 The `BitswapMessage` and `ConnectionEvent` structs are specified in [metricplugin/api.go](metricplugin/api.go).
+The different topics of the exchange contain events of only that type.
+
+Internally, some batching is done to reduce the number of messages sent via AMQP.
+This increases latency, but is probably necessary for typical performance.
+
+Additionally, if the AMQP connection is too slow, events may be dropped.
+The prometheus counter `plugin_metric_export_wiretap_processed_events` keeps track of this.
 
 ## The HTTP Server
 
@@ -228,17 +194,6 @@ The following methods are implemented:
 #### `GET /ping`
 
 This is a no-op which returns an empty struct.
-
-### `GET /monitoring_addresses`
-
-Returns a list of TCP endpoints on which the plugin is listening for Bitswap monitoring subscriptions.
-If the TCP server is not enabled, this returns an empty list.
-Returns a struct of this format:
-```go
-type monitoringAddressesResponse struct {
-	Addresses []string `json:"addresses"`
-}
-```
 
 ### `POST /broadcast_want` and `POST /broadcast_cancel`
 

@@ -1,9 +1,11 @@
 package metricplugin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"sort"
 	"sync"
@@ -16,11 +18,13 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/ipfs/kubo/core"
 	"github.com/ipfs/kubo/plugin"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peerstore"
-	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/fx"
 )
 
 const (
@@ -34,6 +38,7 @@ const (
 var (
 	_ PluginAPI                   = (*MetricExporterPlugin)(nil)
 	_ plugin.PluginDaemonInternal = (*MetricExporterPlugin)(nil)
+	_ plugin.PluginFx             = (*MetricExporterPlugin)(nil)
 
 	// Implementing io.Closer causes the IPFS daemon to gracefully shut down
 	// our plugin.
@@ -47,11 +52,7 @@ type MetricExporterPlugin struct {
 	api  *core.IpfsNode
 	conf Config
 
-	wiretap *BitswapWireTap
-
-	// If not nil, a reference to the TCP server.
-	// Used for clean shutdown.
-	tcpServer *tcpServer
+	bitswapDiscoveryProbe *BitswapDiscoveryProbe
 
 	// A reference to the HTTP server, used for clean shutdown.
 	httpServer *httpServer
@@ -64,48 +65,17 @@ type MetricExporterPlugin struct {
 
 // BroadcastBitswapWant implements RPCAPI.
 func (mep *MetricExporterPlugin) BroadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
-	return mep.wiretap.broadcastBitswapWant(cids)
+	return mep.bitswapDiscoveryProbe.broadcastBitswapWant(cids)
 }
 
 // BroadcastBitswapCancel implements RPCAPI.
 func (mep *MetricExporterPlugin) BroadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
-	return mep.wiretap.broadcastBitswapCancel(cids)
+	return mep.bitswapDiscoveryProbe.broadcastBitswapCancel(cids)
 }
 
 // BroadcastBitswapWantCancel implements RPCAPI.
 func (mep *MetricExporterPlugin) BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
-	return mep.wiretap.broadcastBitswapWantCancel(cids, secondsBetween)
-}
-
-// Subscribe implements MonitoringAPI.
-func (mep *MetricExporterPlugin) Subscribe(subscriber EventSubscriber) error {
-	// This is racy, but probably fine
-	if mep.wiretap != nil {
-		return mep.wiretap.subscribe(subscriber)
-	}
-	// This should never happen.
-	panic("Subscribe called but Bitswap Wiretap not set up")
-}
-
-// Unsubscribe implements MonitoringAPI.
-func (mep *MetricExporterPlugin) Unsubscribe(subscriber EventSubscriber) {
-	// This is racy, but probably fine
-	if mep.wiretap != nil {
-		mep.wiretap.unsubscribe(subscriber)
-	}
-	// This should never happen.
-	panic("Unsubscribe called but Bitswap Wiretap not set up")
-}
-
-// MonitoringAddresses implements RPCAPI.
-func (mep *MetricExporterPlugin) MonitoringAddresses() []string {
-	var addrs []string
-	if mep.tcpServer != nil {
-		for _, l := range mep.tcpServer.listeners {
-			addrs = append(addrs, l.Addr().String())
-		}
-	}
-	return addrs
+	return mep.bitswapDiscoveryProbe.broadcastBitswapWantCancel(cids, secondsBetween)
 }
 
 // Ping implements RPCAPI.
@@ -170,9 +140,13 @@ type Config struct {
 	// AVs are somewhat arbitrarily chosen strings and clutter prometheus.
 	AgentVersionCutOff int `json:"AgentVersionCutOff"`
 
-	// Configuration of the TCP server.
-	// If this is nil, Bitswap monitoring will not be exposed via TCP.
-	TCPServerConfig *TCPServerConfig `json:"TCPServerConfig"`
+	// The address of the AMQP server to send real-time data to.
+	// If this is empty, the real-time tracer will not be set up.
+	AMQPServerAddress string `json:"AMQPServerAddress"`
+
+	// The name to tag real-time data with.
+	// If unset, the hostname is used.
+	MonitorName *string `json:"MonitorName,omitempty"`
 
 	// Configuration of the HTTP server.
 	HTTPServerConfig HTTPServerConfig `json:"HTTPServerConfig"`
@@ -187,7 +161,7 @@ func (*MetricExporterPlugin) Name() string {
 // Version returns the version of this plugin.
 // This is part of the `plugin.Plugin` interface.
 func (*MetricExporterPlugin) Version() string {
-	return "0.3.0"
+	return "0.4.0"
 }
 
 // Init initializes this plugin with the given environment.
@@ -215,13 +189,79 @@ func (mep *MetricExporterPlugin) Init(env *plugin.Environment) error {
 		pConf.AgentVersionCutOff = defaultAgentVersionCutOff
 	}
 
-	if pConf.TCPServerConfig == nil {
-		log.Info("TCPServerConfig is nil, TCP pub/sub interface disabled.")
+	if pConf.MonitorName == nil || len(*pConf.MonitorName) == 0 {
+		log.Debug("missing MonitorName, trying to get hostname instead...")
+		hostName, err := os.Hostname()
+		if err != nil {
+			return errors.Wrap(err, "unable to determine hostname to use for MonitorName config value")
+		}
+		log.Warnf("missing MonitorName, using hostname %q instead", hostName)
+		log.Warnf("missing MonitorName, using hostname %q instead", hostName)
+		pConf.MonitorName = &hostName
+	}
+
+	if len(pConf.AMQPServerAddress) == 0 {
+		log.Error("AMQPServerAddress is empty, will not start Bitswap tracer. Maybe you want to configure this?")
 	}
 
 	mep.conf = pConf
 
 	return nil
+}
+
+type bitswapOptionsOut struct {
+	fx.Out
+
+	BitswapOpts []bs.Option `group:"bitswap-options,flatten"`
+}
+
+// tracerSetup provides options for FX to configure Bitswap with a tracer.
+// cfg must be a valid Configuration, with MonitorName != nil.
+func tracerSetup() interface{} {
+	return func(lc fx.Lifecycle, h host.Host, cfg Config) bitswapOptionsOut {
+		if len(cfg.AMQPServerAddress) == 0 {
+			log.Error("missing AMQPServerAddress, will not add a tracer to Bitswap and will not produce real-time data")
+			return bitswapOptionsOut{}
+		}
+
+		// Set up tracer, which will attempt to connect to the AMQP server.
+		tracer, err := NewTracer(h.Network(), *cfg.MonitorName, cfg.AMQPServerAddress)
+		if err != nil {
+			panic(err)
+		}
+
+		// Subscribe to network events.
+		h.Network().Notify(tracer)
+
+		// Add Bitswap option to use our tracer.
+		opts := []bs.Option{
+			bs.WithTracer(tracer),
+		}
+
+		// Add lifecycle stuff to shut down cleanly.
+		// TODO I don't think this works.
+		lc.Append(fx.Hook{
+			OnStop: func(ctx context.Context) error {
+				tracer.Shutdown()
+				return nil
+			},
+		})
+
+		return bitswapOptionsOut{BitswapOpts: opts}
+	}
+}
+
+// Options implements FxPlugin.
+// This is run _after_ Init and _before_ start, which means we have a validated
+// config at this point.
+func (mep *MetricExporterPlugin) Options(info core.FXNodeInfo) ([]fx.Option, error) {
+	opts := info.FXOptions
+
+	fmt.Println("Metric Export Plugin injecting options...")
+
+	opts = append(opts, fx.Provide(tracerSetup()), fx.Supply(mep.conf))
+
+	return opts, nil
 }
 
 // Start starts this plugin.
@@ -239,10 +279,11 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	prometheus.MustRegister(supportedProtocolsAmongConnectedPeers)
 	prometheus.MustRegister(agentVersionCount)
 	prometheus.MustRegister(streamCount)
-	prometheus.MustRegister(wiretapBitswapSenderCount)
-	prometheus.MustRegister(wiretapPeerCount)
-	prometheus.MustRegister(wiretapConnectionCount)
+	prometheus.MustRegister(probeBitswapSenderCount)
+	prometheus.MustRegister(probePeerCount)
+	prometheus.MustRegister(probeConnectionCount)
 	prometheus.MustRegister(wiretapSentBytes)
+	prometheus.MustRegister(wiretapProcessedEvents)
 
 	// Get the bitswap instance from the interface.
 	bitswapEngine, ok := mep.api.Exchange.(*bs.Bitswap)
@@ -255,40 +296,22 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 	// This will break if the structure of the bs.Bitswap struct changes.
 	// Hopefully that doesn't happen too often...
 	// See https://stackoverflow.com/a/60598827
-	bsnetImpl, ok := (getUnexportedField(reflect.ValueOf(bitswapEngine).Elem().FieldByName("network"))).(bsnet.BitSwapNetwork)
+	bsnetImpl, ok := (getUnexportedField(reflect.ValueOf(bitswapEngine).Elem().FieldByName("net"))).(bsnet.BitSwapNetwork)
 	if !ok {
 		return errors.New("could not get Bitswap network implementation")
 	}
 
-	// Create a wiretap instance & subscribe to notifications in Bitswap &
+	// Create a bitswap bitswapDiscoveryProbe & subscribe to notifications in Bitswap &
 	// network.Network.
-	// We need to start this before we start the TCP server, so that clients can
-	// subscribe immediately without fail or races.
-	mep.wiretap = NewWiretap(ipfsInstance, bsnetImpl)
-	bs.WithTracer(mep.wiretap)(bitswapEngine)
+	mep.bitswapDiscoveryProbe = NewProbe(ipfsInstance.PeerHost.Network(), bsnetImpl)
 
 	// Subscribe to network events.
-	ipfsInstance.PeerHost.Network().Notify(mep.wiretap)
+	ipfsInstance.PeerHost.Network().Notify(mep.bitswapDiscoveryProbe)
 
 	// Periodically populate Prometheus with metrics about peer counts.
 	if mep.conf.PopulatePrometheusInterval != 0 {
 		mep.wg.Add(1)
 		go mep.populatePrometheus(time.Duration(mep.conf.PopulatePrometheusInterval) * time.Second)
-	}
-
-	// Start TCP server for Bitswap monitoring.
-	if mep.conf.TCPServerConfig != nil {
-		tcpServer, err := newTCPServer(mep, *mep.conf.TCPServerConfig)
-		if err != nil {
-			return errors.Wrap(err, "unable to start TCP server")
-		}
-		mep.tcpServer = tcpServer
-
-		mep.tcpServer.StartServer()
-
-		for _, l := range tcpServer.listeners {
-			fmt.Printf("Metric Export TCP server listening on %s\n", l.Addr())
-		}
 	}
 
 	// Start HTTP server.
@@ -328,11 +351,8 @@ func (mep *MetricExporterPlugin) Close() error {
 	}
 	mep.closingLock.Unlock()
 
-	if mep.tcpServer != nil {
-		mep.tcpServer.Shutdown()
-	}
-	if mep.wiretap != nil {
-		mep.wiretap.Shutdown()
+	if mep.bitswapDiscoveryProbe != nil {
+		mep.bitswapDiscoveryProbe.Shutdown()
 	}
 	mep.httpServer.Shutdown()
 

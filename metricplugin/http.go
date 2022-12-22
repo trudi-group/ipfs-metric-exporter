@@ -11,7 +11,7 @@ import (
 	pbmsg "github.com/ipfs/go-bitswap/message/pb"
 	"github.com/ipfs/go-cid"
 	"github.com/julienschmidt/httprouter"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +27,6 @@ type HTTPServerConfig struct {
 const (
 	APIBasePath                = "/metric_plugin/v1"
 	APIPingPath                = APIBasePath + "/ping"
-	APIMonitoringAddressesPath = APIBasePath + "/monitoring_addresses"
 	APIBroadcastWantPath       = APIBasePath + "/broadcast_want"
 	APIBroadcastCancelPath     = APIBasePath + "/broadcast_cancel"
 	APIBroadcastWantCancelPath = APIBasePath + "/broadcast_want_cancel"
@@ -127,13 +126,11 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 	router.GET(APIBasePath, func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 		_, _ = fmt.Fprintf(w, "Methods:\n"+
 			"GET  %s no-op\n"+
-			"GET  %s returns a list of addresses on which the monitor is listening for Bitswap monitoring connections\n"+
 			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs\n"+
 			"POST %s broadcasts a Bitswap CANCEL message for a given list of CIDs\n"+
 			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs, followed by a CANCEL message after a given amount of time\n"+
 			"GET  %s returns information about peers from the peerstore, and connection state\n",
 			APIPingPath,
-			APIMonitoringAddressesPath,
 			APIBroadcastWantPath,
 			APIBroadcastCancelPath,
 			APIBroadcastWantCancelPath,
@@ -142,9 +139,6 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 
 	router.GET(APIPingPath,
 		s.buildHandler(ping(s.api)))
-
-	router.GET(APIMonitoringAddressesPath,
-		s.buildHandler(monitoringAddresses(s.api)))
 
 	router.POST(APIBroadcastWantPath,
 		s.buildHandler(broadcastBitswapWant(s.api)))
@@ -374,12 +368,6 @@ type pingResponse struct{}
 
 func (pingResponse) response() {}
 
-type monitoringAddressesResponse struct {
-	Addresses []string `json:"addresses"`
-}
-
-func (monitoringAddressesResponse) response() {}
-
 type broadcastBitswapRequest struct {
 	Cids []cid.Cid `json:"cids"`
 }
@@ -402,19 +390,6 @@ func ping(api RPCAPI) apiFunction {
 		api.Ping()
 
 		return pingResponse{}, nil
-	}
-}
-
-func monitoringAddresses(api RPCAPI) apiFunction {
-	return func(_ *http.Request, _ httprouter.Params) (response, error) {
-		addrs := api.MonitoringAddresses()
-		if addrs == nil {
-			// Go encodes a nil slice as nil in JSON, but we want an empty
-			// array.
-			addrs = make([]string, 0)
-		}
-
-		return monitoringAddressesResponse{Addresses: addrs}, nil
 	}
 }
 
