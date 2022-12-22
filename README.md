@@ -33,7 +33,7 @@ This is an internal plugin, which needs to be built against the sources that pro
 plug into.
 __The `ipfs` binary and this plugin must be built from/against the same IPFS sources, using the same version of the Go
 compiler.__
-We build and run against kubo v0.16.0, using Go 1.19.
+We build and run against kubo v0.17.0, using Go 1.19.
 You can build against either
 1. the official, online `kubo` source (and recompile IPFS) or
 2. a local fork, in which case you need to a `replace` directive to the `go.mod` file.
