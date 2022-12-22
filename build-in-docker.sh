@@ -6,6 +6,8 @@
 mkdir -p out
 
 docker build -t ipfs-mexport-builder -f Dockerfile.builder .
+docker build -t kubo-mexport -f Dockerfile.kubo .
+
 docker create --name extract ipfs-mexport-builder
 docker cp extract:/usr/local/bin/ipfs ./out/
 docker rm extract
