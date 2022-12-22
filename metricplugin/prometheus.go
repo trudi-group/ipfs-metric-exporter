@@ -24,23 +24,29 @@ var streamCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 },
 	[]string{"protocol", "direction"})
 
-var wiretapBitswapSenderCount = prometheus.NewGauge(prometheus.GaugeOpts{
+var probeBitswapSenderCount = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "plugin_metric_export_bitswap_senders",
-	Help: "Number of available Bitswap senders to use to send Bitswap messages.",
+	Help: "Number of available Bitswap senders to use by the discovery probe to send Bitswap messages.",
 })
 
-var wiretapPeerCount = prometheus.NewGauge(prometheus.GaugeOpts{
+var probePeerCount = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "plugin_metric_export_wiretap_peers",
-	Help: "Number of connected peers tracked via the wiretap, based on connection events reported by the IPFS node.",
+	Help: "Number of connected peers tracked via the discovery probe, based on connection events reported by the IPFS node.",
 })
 
-var wiretapConnectionCount = prometheus.NewGauge(prometheus.GaugeOpts{
+var probeConnectionCount = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "plugin_metric_export_wiretap_connections",
-	Help: "Number of connections tracked via the wiretap, based on connection events reported by the IPFS node.",
+	Help: "Number of connections tracked via the discovery probe, based on connection events reported by the IPFS node.",
 })
 
 var wiretapSentBytes = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "plugin_metric_export_wiretap_sent_bytes",
-	Help: "Number of bytes sent via the wiretap TCP interface, by pre/post compression.",
+	Help: "Number of bytes processed by the Bitswap tracer to RabbitMQ, by pre/post compression.",
 },
 	[]string{"compressed"})
+
+var wiretapProcessedEvents = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name: "plugin_metric_export_wiretap_processed_events",
+	Help: "Number of events processed by the Bitswap tracer, by whether they were dropped due to backpressure/slow connection to RabbitMQ.",
+},
+	[]string{"dropped"})

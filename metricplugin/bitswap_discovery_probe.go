@@ -6,31 +6,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ipfs/go-bitswap"
 	bsmsg "github.com/ipfs/go-bitswap/message"
 	pbmsg "github.com/ipfs/go-bitswap/message/pb"
 	bsnet "github.com/ipfs/go-bitswap/network"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/kubo/core"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	"go.uber.org/zap"
 )
 
-const (
-	kadDHTString = "/kad/"
-)
+var _ network.Notifiee = (*BitswapDiscoveryProbe)(nil)
 
-var (
-	_ bitswap.Tracer   = (*BitswapWireTap)(nil)
-	_ network.Notifiee = (*BitswapWireTap)(nil)
-)
-
-// BitswapWireTap implements the `bitswap.WireTap` interface to log Bitswap
-// messages.
-// It also implements `network.Notifiee` to receive notifications about peers
+// BitswapDiscoveryProbe exposes functionality to perform Bitswap-only discovery
+// for a set of CIDs.
+// It implements `network.Notifiee` to receive notifications about peers
 // connecting, disconnecting, etc.
 // It keeps track of peers the node is connected to and attempts to hold an
 // active Bitswap sender to each of them.
@@ -39,12 +30,9 @@ var (
 // receive duplicate disconnection events or miss connection events.
 // However, it looks like we converge with the true IPFS connectivity after a
 // while.
-type BitswapWireTap struct {
-	api       *core.IpfsNode
-	bsnetImpl bsnet.BitSwapNetwork
-
-	// Keeps track of whom to send Bitswap messages and connection events to.
-	subscribers subscribers
+type BitswapDiscoveryProbe struct {
+	nodeNetwork network.Network
+	bsnetImpl   bsnet.BitSwapNetwork
 
 	// Keeps track of peers we are connected to and bitswap senders.
 	connManager connectionManager
@@ -70,74 +58,13 @@ type peerConnection struct {
 	connections   map[string]network.Conn
 }
 
-type subscribers struct {
-	subscribers []EventSubscriber
-	lock        sync.RWMutex
-}
-
-func (s *subscribers) subscribe(sub EventSubscriber) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	// TODO we could make this sorted and then binary search, but not worth now.
-	id := sub.ID()
-	for _, sub := range s.subscribers {
-		if sub.ID() == id {
-			return ErrAlreadySubscribed
-		}
-	}
-
-	s.subscribers = append(s.subscribers, sub)
-	return nil
-}
-
-func (s *subscribers) unsubscribe(sub EventSubscriber) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	// TODO we could make this sorted and then binary search, but not worth now.
-	id := sub.ID()
-	for i, sub := range s.subscribers {
-		if sub.ID() == id {
-			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *subscribers) publishBitswapMessage(timestamp time.Time, peer peer.ID, msg BitswapMessage) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	log.Debugf("publishing Bitswap message to %d subscribers", len(s.subscribers))
-	for i := len(s.subscribers) - 1; i >= 0; i-- {
-		if err := s.subscribers[i].BitswapMessageReceived(timestamp, peer, msg); err != nil {
-			// Remove from subscribers
-			log.Warnf("removing faulty subscriber %s", s.subscribers[i].ID())
-			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
-		}
-	}
-}
-
-func (s *subscribers) publishConnectionEvent(timestamp time.Time, peer peer.ID, connEvent ConnectionEvent) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	log.Debugf("publishing connection event to %d subscribers", len(s.subscribers))
-	for i := len(s.subscribers) - 1; i >= 0; i-- {
-		if err := s.subscribers[i].ConnectionEventRecorded(timestamp, peer, connEvent); err != nil {
-			// Remove from subscribers
-			log.Warnf("removing faulty subscriber %s", s.subscribers[i].ID())
-			s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
-		}
-	}
-}
-
-// NewWiretap creates a new Bitswap Wiretap and network Notifiee.
+// NewProbe creates a new Bitswap Probe and network Notifiee.
 // This will spawn goroutines to log stats and connect to peers via Bitswap.
 // Use the Shutdown method to shut down cleanly.
-func NewWiretap(ipfsInstance *core.IpfsNode, bsnetImpl bsnet.BitSwapNetwork) *BitswapWireTap {
-	wt := &BitswapWireTap{
-		api:       ipfsInstance,
-		bsnetImpl: bsnetImpl,
+func NewProbe(nodeNetwork network.Network, bsnetImpl bsnet.BitSwapNetwork) *BitswapDiscoveryProbe {
+	wt := &BitswapDiscoveryProbe{
+		nodeNetwork: nodeNetwork,
+		bsnetImpl:   bsnetImpl,
 		connManager: connectionManager{
 			allConnections: make(map[string]struct{}),
 			peers:          make(map[peer.ID]peerConnection),
@@ -162,7 +89,7 @@ func NewWiretap(ipfsInstance *core.IpfsNode, bsnetImpl bsnet.BitSwapNetwork) *Bi
 // WaitGroup-bound function to loop forever and print stats about connectivity
 // and Bitswap senders.
 // This exits when wt.closing is closed.
-func (wt *BitswapWireTap) connectivityStatLoop() {
+func (wt *BitswapDiscoveryProbe) connectivityStatLoop() {
 	defer wt.wg.Done()
 
 	// A list of Bitswap protocol IDs.
@@ -187,7 +114,7 @@ func (wt *BitswapWireTap) connectivityStatLoop() {
 		}
 
 		// Get stats as reported by the IPFS node.
-		conns := wt.api.PeerHost.Network().Conns()
+		conns := wt.nodeNetwork.Conns()
 		peers := make(map[peer.ID]struct{})
 		numBitswapStreams := 0
 		for _, conn := range conns {
@@ -219,9 +146,9 @@ func (wt *BitswapWireTap) connectivityStatLoop() {
 			len(conns), len(peers), numBitswapStreams, numOurConns, numOurPeers, numOurBitswapSenders)
 
 		// Populate prometheus.
-		wiretapBitswapSenderCount.Set(float64(numOurBitswapSenders))
-		wiretapPeerCount.Set(float64(numOurPeers))
-		wiretapConnectionCount.Set(float64(numOurConns))
+		probeBitswapSenderCount.Set(float64(numOurBitswapSenders))
+		probePeerCount.Set(float64(numOurPeers))
+		probeConnectionCount.Set(float64(numOurConns))
 	}
 }
 
@@ -229,7 +156,7 @@ func (wt *BitswapWireTap) connectivityStatLoop() {
 // This will go through all peers we believe we are connected to and creates a
 // goroutine for each missing Bitswap sender, calling connectBitswap.
 // Exits when wt.closing is closed.
-func (wt *BitswapWireTap) bitswapConnectionLoop() {
+func (wt *BitswapDiscoveryProbe) bitswapConnectionLoop() {
 	defer wt.wg.Done()
 
 	// Ticker for periodic Bitswap sender creation.
@@ -256,19 +183,11 @@ func (wt *BitswapWireTap) bitswapConnectionLoop() {
 	}
 }
 
-func (wt *BitswapWireTap) subscribe(subscriber EventSubscriber) error {
-	return wt.subscribers.subscribe(subscriber)
-}
-
-func (wt *BitswapWireTap) unsubscribe(subscriber EventSubscriber) {
-	wt.subscribers.unsubscribe(subscriber)
-}
-
-// Shutdown shuts down the wiretap cleanly.
+// Shutdown shuts down the probe cleanly.
 // This is idempotent, i.e. calling it multiple times does not cause problems.
 // This will block until all goroutines have quit (this depends on some
 // timeouts for connecting to peers and opening streams, probably).
-func (wt *BitswapWireTap) Shutdown() {
+func (wt *BitswapDiscoveryProbe) Shutdown() {
 	wt.closeLock.Lock()
 	select {
 	case <-wt.closing:
@@ -283,7 +202,7 @@ func (wt *BitswapWireTap) Shutdown() {
 	wt.wg.Wait()
 }
 
-func (wt *BitswapWireTap) broadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
+func (wt *BitswapDiscoveryProbe) broadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
 	status := wt.broadcast(cids, true, 0, false)
 
 	results := make([]BroadcastWantStatus, len(status))
@@ -294,7 +213,7 @@ func (wt *BitswapWireTap) broadcastBitswapWant(cids []cid.Cid) []BroadcastWantSt
 	return results
 }
 
-func (wt *BitswapWireTap) broadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
+func (wt *BitswapDiscoveryProbe) broadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
 	status := wt.broadcast(cids, false, 0, false)
 
 	results := make([]BroadcastCancelStatus, len(status))
@@ -305,7 +224,7 @@ func (wt *BitswapWireTap) broadcastBitswapCancel(cids []cid.Cid) []BroadcastCanc
 	return results
 }
 
-func (wt *BitswapWireTap) broadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
+func (wt *BitswapDiscoveryProbe) broadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
 	status := wt.broadcast(cids, true, secondsBetween, true)
 
 	results := make([]BroadcastWantCancelStatus, len(status))
@@ -334,7 +253,7 @@ type broadcastStatus struct {
 	cancel  *BroadcastCancelStatus
 }
 
-func (wt *BitswapWireTap) broadcast(cids []cid.Cid, want bool, cancelAfterSeconds uint, cancelAfter bool) []broadcastStatus {
+func (wt *BitswapDiscoveryProbe) broadcast(cids []cid.Cid, want bool, cancelAfterSeconds uint, cancelAfter bool) []broadcastStatus {
 	logger := log.Named("broadcast")
 
 	logger.With("want", want, "cancelAfterSeconds", cancelAfterSeconds, "cancelAfter", cancelAfter).Debugf("starting broadcast")
@@ -533,90 +452,16 @@ func sendBitswapMessage(ctx context.Context, sender bsnet.MessageSender, msg bsm
 	return tsBefore, elapsed, err
 }
 
-// MessageReceived is called on incoming Bitswap messages.
-func (wt *BitswapWireTap) MessageReceived(peerID peer.ID, msg bsmsg.BitSwapMessage) {
-	now := time.Now()
-
-	// Get potential underlay addresses from current connections to the peer.
-	// We explicitly allocate an empty slice because the ConnectedAddresses
-	// field on the messages we log (and send out via TCP) is non-nullable.
-	// It apparently sometimes happens that we don't find an open connection
-	// to the peer we received from (race condition, yay).
-	potentialAddresses := make([]ma.Multiaddr, 0, 1)
-	// TODO we have to keep an eye on performance: This read-locks the
-	// connection manager(? or something else) and allocates a slice.
-	// Copying a few addresses is probably fast, but this might become a problem
-	// if we receive multiple thousand messages per second.
-	conns := wt.api.PeerHost.Network().ConnsToPeer(peerID)
-	for _, c := range conns {
-		potentialAddresses = append(potentialAddresses, c.RemoteMultiaddr())
-	}
-
-	// Get CIDs of contained blocks.
-	msgBlocks := msg.Blocks()
-	blocks := make([]cid.Cid, 0, len(msgBlocks))
-	for _, block := range msgBlocks {
-		blocks = append(blocks, block.Cid())
-	}
-
-	// Get block presences.
-	msgBlockPresences := msg.BlockPresences()
-	blockPresences := make([]BlockPresence, 0, len(msgBlockPresences))
-	for _, presence := range msgBlockPresences {
-		p := BlockPresence{
-			Cid: presence.Cid,
-		}
-		if presence.Type == pbmsg.Message_Have {
-			p.Type = Have
-		} else {
-			p.Type = DontHave
-		}
-		blockPresences = append(blockPresences, p)
-	}
-
-	// Construct the message to push to subscribers
-	msgToLog := BitswapMessage{
-		WantlistEntries:    msg.Wantlist(),
-		FullWantList:       msg.Full(),
-		Blocks:             blocks,
-		BlockPresences:     blockPresences,
-		ConnectedAddresses: potentialAddresses,
-	}
-	log.Debugf("Received Bitswap message from peer %s: %+v", peerID, msgToLog)
-
-	// Notify subscribers.
-	wt.subscribers.publishBitswapMessage(now, peerID, msgToLog)
-}
-
-// MessageSent is called on outgoing Bitswap messages.
-// We do not use this at the moment.
-func (*BitswapWireTap) MessageSent(peer.ID, bsmsg.BitSwapMessage) {}
-
 // Listen is called when the network implementation starts listening on the given address.
 // We do not use this at the moment.
-func (*BitswapWireTap) Listen(network.Network, ma.Multiaddr) {}
+func (*BitswapDiscoveryProbe) Listen(network.Network, ma.Multiaddr) {}
 
 // ListenClose is called when the network implementation stops listening on the given address.
 // We do not use this at the moment.
-func (*BitswapWireTap) ListenClose(network.Network, ma.Multiaddr) {}
-
-func (wt *BitswapWireTap) notifyConnEvent(connected bool, conn network.Conn) {
-	now := time.Now()
-	eventToLog := ConnectionEvent{
-		Remote:              conn.RemoteMultiaddr(),
-		ConnectionEventType: Connected,
-	}
-	if !connected {
-		eventToLog.ConnectionEventType = Disconnected
-	}
-	p := conn.RemotePeer()
-
-	// Notify subscribers.
-	wt.subscribers.publishConnectionEvent(now, p, eventToLog)
-}
+func (*BitswapDiscoveryProbe) ListenClose(network.Network, ma.Multiaddr) {}
 
 // Connected is called when a connection is opened.
-func (wt *BitswapWireTap) Connected(_ network.Network, conn network.Conn) {
+func (wt *BitswapDiscoveryProbe) Connected(_ network.Network, conn network.Conn) {
 	remotePeer := conn.RemotePeer()
 	log.Debugf("Connection event for peer %s, address: %s", remotePeer, conn.RemoteMultiaddr())
 
@@ -654,8 +499,6 @@ func (wt *BitswapWireTap) Connected(_ network.Network, conn network.Conn) {
 		wt.wg.Add(1)
 		go wt.connectBitswap(conn.RemotePeer(), time.Duration(1)*time.Second)
 	}
-
-	wt.notifyConnEvent(true, conn)
 }
 
 // Creates a Bitswap sender to a given peer after waiting the specified time.
@@ -679,7 +522,7 @@ func (wt *BitswapWireTap) Connected(_ network.Network, conn network.Conn) {
 // This is generally not a problem: The Bitswap sender, when instructed to send
 // a message, will retry and reconnect to its peer, using whatever connection is
 // available to that peer.
-func (wt *BitswapWireTap) connectBitswap(remotePeer peer.ID, waitTime time.Duration) {
+func (wt *BitswapDiscoveryProbe) connectBitswap(remotePeer peer.ID, waitTime time.Duration) {
 	defer wt.wg.Done()
 
 	// Wait a few seconds, maybe this was a short-lived connection.
@@ -760,7 +603,7 @@ func (wt *BitswapWireTap) connectBitswap(remotePeer peer.ID, waitTime time.Durat
 }
 
 // Disconnected is called when a connection is closed.
-func (wt *BitswapWireTap) Disconnected(_ network.Network, conn network.Conn) {
+func (wt *BitswapDiscoveryProbe) Disconnected(_ network.Network, conn network.Conn) {
 	remotePeer := conn.RemotePeer()
 	log.Debugf("Disconnection event for peer %s, address %s", remotePeer, conn.RemoteMultiaddr())
 
@@ -792,18 +635,4 @@ func (wt *BitswapWireTap) Disconnected(_ network.Network, conn network.Conn) {
 			delete(wt.connManager.peers, remotePeer)
 		}
 	}
-
-	wt.notifyConnEvent(false, conn)
-}
-
-// OpenedStream is called when a stream has been opened.
-// We do not use this at the moment.
-func (*BitswapWireTap) OpenedStream(_ network.Network, s network.Stream) {
-	log.Debugf("Opened stream to peer %s, stream ID %s, direction %s, protocol %s", s.Conn().RemotePeer(), s.ID(), s.Stat().Direction, s.Protocol())
-}
-
-// ClosedStream is called when a stream has been closed.
-// We do not use this at the moment.
-func (*BitswapWireTap) ClosedStream(_ network.Network, s network.Stream) {
-	log.Debugf("Closed stream to peer %s, stream ID %s, direction %s, protocol %s", s.Conn().RemotePeer(), s.ID(), s.Stat().Direction, s.Protocol())
 }
