@@ -19,6 +19,8 @@ updates:
       - dependency-name: "github.com/libp2p/go-libp2p-core"
       - dependency-name: "github.com/multiformats/go-multiaddr"
       - dependency-name: "github.com/prometheus/client_golang"
+      - dependency-name: "go.uber.org/fx"
+      - dependency-name: "go.uber.org/zap"
 
   - package-ecosystem: "docker"
     directory: "/"
