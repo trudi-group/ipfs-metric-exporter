@@ -1,0 +1,171 @@
+version: '3.8'
+services:
+  # A busybox container to easily launch a shell within the network.
+  shell:
+    image: "busybox:latest"
+
+  rabbitmq:
+    image: "rabbitmq:3.10"
+    restart: unless-stopped
+    hostname: rmq
+    links:
+      - prometheus
+    expose:
+      - 15692
+    # Healthcheck from https://devops.stackexchange.com/questions/12092/docker-compose-healthcheck-for-rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q status
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq.advanced.config:/etc/rabbitmq/advanced.config
+      - ./rabbitmq-definitions.json:/etc/rabbitmq/definitions.json
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia/rabbit@rmq
+      - rabbitmq_logs:/var/log/rabbitmq/log
+    ports:
+      # AMQP, if we ever want to do live analysis outside the container network.
+      # We probably don't want this open on the internet, yet, since it's
+      # unprotected.
+      - "${LOCAL_IP}:5672:5672"
+
+  daemon01:
+    hostname: 'docker_compose_monitor_01'
+    image: "kubo-mexport:latest"
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    links:
+      - rabbitmq
+      - prometheus
+    volumes:
+      - ipfs_01_path:/data/ipfs
+      - ./001_configure_ipfs.sh:/container-init.d/001_configure_ipfs.sh
+    ports:
+      # Swarm listens on all interfaces, so is remotely reachable.
+      - "4001:4001/tcp"
+      - "4001:4001/udp"
+      # API port, which includes admin operations, so you probably don't want this remotely accessible.
+      - "${LOCAL_IP}:5001:5001"
+      # metric-export HTTP API
+      - "${LOCAL_IP}:8432:8432"
+
+  daemon02:
+    hostname: 'docker_compose_monitor_02'
+    image: "kubo-mexport:latest"
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    links:
+      - rabbitmq
+      - prometheus
+    volumes:
+      - ipfs_02_path:/data/ipfs
+      - ./001_configure_ipfs.sh:/container-init.d/001_configure_ipfs.sh
+      - ./002_configure_second_daemon_addresses.sh:/container-init.d/002_configure_second_daemon_addresses.sh
+    ports:
+      # Swarm listens on all interfaces, so is remotely reachable.
+      - "4002:4002/tcp"
+      - "4002:4002/udp"
+      # API port, which includes admin operations, so you probably don't want this remotely accessible.
+      - "${LOCAL_IP}:5002:5001"
+      # metric-export HTTP API
+      - "${LOCAL_IP}:8433:8432"
+
+  # See https://github.com/maxmind/geoipupdate/blob/main/doc/docker.md
+  geoipupdate:
+    image: maxmindinc/geoipupdate
+    restart: unless-stopped
+    environment:
+      - GEOIPUPDATE_ACCOUNT_ID=$GEOIP_ACCOUNT_ID
+      - GEOIPUPDATE_LICENSE_KEY=$GEOIP_LICENSE_KEY
+      - 'GEOIPUPDATE_EDITION_IDS=GeoLite2-ASN GeoLite2-City GeoLite2-Country'
+      - GEOIPUPDATE_FREQUENCY=24
+    volumes:
+      - geoip_data:/usr/share/GeoIP
+
+  monitoring-client:
+    image: "bitswap-monitoring-client:latest"
+    restart: unless-stopped
+    expose:
+      - 8088
+    volumes:
+      - ./monitoring_client_config.yaml:/ipfs-tools/config/bitswap-monitoring-client-config.yaml
+      - geoip_data:/geoip
+    environment:
+      - RUST_LOG=info
+    links:
+      - rabbitmq
+      - prometheus
+      - daemon01
+      - daemon02
+    depends_on:
+      geoipupdate:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      daemon01:
+        condition: service_healthy
+      daemon02:
+        condition: service_healthy
+
+  grafana:
+    # https://hub.docker.com/r/grafana/grafana/tags
+    image: grafana/grafana:9.3.2
+    restart: unless-stopped
+    ports:
+      - "${LOCAL_IP}:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/rabbitmq.yaml
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/prometheus.yaml
+      - ./grafana/dashboards:/dashboards
+    environment:
+      # https://grafana.com/plugins/flant-statusmap-panel
+      # https://grafana.com/plugins/grafana-piechart-panel
+      GF_INSTALL_PLUGINS: "flant-statusmap-panel,grafana-piechart-panel"
+      GF_SECURITY_ADMIN_PASSWORD: $GRAFANA_ADMIN_PASSWORD
+      GF_SECURITY_ADMIN_USER: "admin"
+
+  prometheus:
+    image: prom/prometheus:v2.39.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--storage.tsdb.retention.time=365d"
+    restart: unless-stopped
+    expose:
+      - 9090
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  node-exporter:
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    expose:
+      - 9100
+    image: prom/node-exporter:v1.4.0
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  ipfs_01_path:
+  ipfs_02_path:
+  rabbitmq_data:
+  rabbitmq_logs:
+  geoip_data:

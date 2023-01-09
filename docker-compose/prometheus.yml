@@ -1,0 +1,26 @@
+# Prometheus server config file for IPFS-related metrics.
+global:
+  scrape_interval:     15s # Default is every 1 minute.
+
+scrape_configs:
+  # Metrics provided by kubo itself.
+  # These are exposed at <API address>/debug/metrics/prometheus
+  - job_name: 'kubo'
+    metrics_path: '/debug/metrics/prometheus'
+    static_configs:
+      - targets: ['daemon01:5001', 'daemon02:5001']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'bitswap-monitoring-client'
+    static_configs:
+      - targets:
+        - 'monitoring-client:8088'
+
+  # RabbitMQ, per-object metrics
+  - job_name: 'rabbitmq-per-object'
+    metrics_path: /metrics/per-object
+    static_configs:
+      - targets: ['rmq:15692']
