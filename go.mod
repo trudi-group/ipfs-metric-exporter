@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/rabbitmq/amqp091-go v1.5.0
 	go.uber.org/fx v1.17.1
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.23.0
 )
 
 require (
