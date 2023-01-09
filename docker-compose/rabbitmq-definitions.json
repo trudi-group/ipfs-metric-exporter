@@ -1,0 +1,55 @@
+{
+  "exchanges": [
+    {
+      "arguments": {},
+      "auto_delete": false,
+      "durable": false,
+      "name": "ipfs.passive_monitoring",
+      "type": "topic",
+      "vhost": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "configure": ".*",
+      "read": ".*",
+      "user": "guest",
+      "vhost": "/",
+      "write": ".*"
+    }
+  ],
+  "policies": [
+    {
+      "apply-to": "queues",
+      "definition": {
+        "max-length": 1000,
+        "message-ttl": 10000
+      },
+      "name": "all-queue-limits",
+      "pattern": ".*",
+      "priority": 0,
+      "vhost": "/"
+    }
+  ],
+  "users": [
+    {
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "limits": {},
+      "name": "guest",
+      "password_hash": "n3VT5JcX8HEJwGqrXjhyvcHoURPa044HKUEHPW8OICDCOfZw",
+      "tags": [
+        "administrator"
+      ]
+    }
+  ],
+  "vhosts": [
+    {
+      "limits": [],
+      "metadata": {
+        "description": "Default virtual host",
+        "tags": []
+      },
+      "name": "/"
+    }
+  ]
+}

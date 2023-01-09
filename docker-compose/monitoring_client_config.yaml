@@ -1,0 +1,23 @@
+# This is a config file for the bitswap-monitoring-client tool.
+
+# Address to listen and serve prometheus metrics on.
+prometheus_address: "0.0.0.0:8088"
+
+# Specifies the path to the MaxMind GeoLite databases.
+# Defaults to /usr/local/share/GeoIP if unspecified.
+geoip_database_path: "/geoip"
+
+# Specifies the path to a public gateway ID file.
+# Each line in the file should contain one peer ID.
+# If not provided all traffic will be logged as non-gateway-traffic.
+# Defaults to empty, i.e., no tagging of gateway traffic.
+#gateway_file_path: "/usr/local/share/gateways.txt"
+
+# List of AMQP data sources to connect to.
+amqp_servers:
+  # Address of the AMQP server, using amqp or amqps (TLS transport) scheme.
+  - amqp_server_address: "amqp://rmq:5672/%2f"
+    # A list of monitors to subscribe to via this data source.
+    monitor_names:
+      - "docker_compose_monitor_01"
+      - "docker_compose_monitor_02"
