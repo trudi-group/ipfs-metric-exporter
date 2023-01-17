@@ -3,7 +3,7 @@
 package main
 
 import (
-	pl "meplugin/metricplugin"
+	pl "github.com/trudi-group/ipfs-metric-exporter/metricplugin"
 
 	"github.com/ipfs/kubo/plugin"
 )

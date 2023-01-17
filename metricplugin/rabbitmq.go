@@ -20,7 +20,7 @@ import (
 
 // RabbitMQPublisher implements publishing events to RabbitMQ.
 type RabbitMQPublisher struct {
-	msgOut chan event
+	msgOut chan Event
 
 	logger *zap.SugaredLogger
 
@@ -38,7 +38,7 @@ func newRabbitMQPublisher(monitorName string, addr string) (*RabbitMQPublisher, 
 	fmt.Printf("Bitswap tracer connected to RabbitMQ at %s\n", addr)
 
 	// Set up some plumbing
-	msgChan := make(chan event)
+	msgChan := make(chan Event)
 	packetChan := make(chan eventPackage)
 	jsonChan := make(chan binaryPackage)
 	gzipChan := make(chan binaryPackage)
@@ -116,7 +116,7 @@ func (p *RabbitMQPublisher) PublishConnectionEvent(ts time.Time, connected bool,
 	}
 	rp := conn.RemotePeer()
 
-	p.msgOut <- event{
+	p.msgOut <- Event{
 		Timestamp:       ts,
 		Peer:            rp.String(),
 		ConnectionEvent: &eventToLog,
@@ -128,14 +128,15 @@ func (p *RabbitMQPublisher) PublishConnectionEvent(ts time.Time, connected bool,
 // The message may be dropped if the connection to RabbitMQ is too slow.
 // This will never block.
 func (p *RabbitMQPublisher) PublishBitswapMessage(ts time.Time, peer peer.ID, msg *BitswapMessage) {
-	p.msgOut <- event{
+	p.msgOut <- Event{
 		Timestamp:      ts,
 		Peer:           peer.String(),
 		BitswapMessage: msg,
 	}
 }
 
-type event struct {
+// Event is the recording of an incoming message.
+type Event struct {
 	// The timestamp at which the event was recorded.
 	// This defines an ordering for events.
 	Timestamp time.Time `json:"timestamp"`
@@ -158,7 +159,7 @@ const (
 )
 
 type eventPackage struct {
-	events      []event
+	events      []Event
 	contentType eventType
 }
 
@@ -172,7 +173,7 @@ type binaryPackage struct {
 // The slices are then sent to the encoder.
 // If sending is blocked due to slow encoding or later pipeline stages, some buffering is attempted.
 // If sending is blocked for a long time, values will be dropped.
-func packagerLoop(logger *zap.SugaredLogger, msgIn <-chan event, packetsOut chan eventPackage) {
+func packagerLoop(logger *zap.SugaredLogger, msgIn <-chan Event, packetsOut chan eventPackage) {
 	defer func() {
 		logger.Info("packagerLoop quitting")
 		close(packetsOut)
@@ -189,11 +190,11 @@ func packagerLoop(logger *zap.SugaredLogger, msgIn <-chan event, packetsOut chan
 	maxSliceSize := 1000
 
 	msgBuffer := &eventPackage{
-		events:      make([]event, 0, minSliceSize),
+		events:      make([]Event, 0, minSliceSize),
 		contentType: eventTypeBitswapMessages,
 	}
 	connEventBuffer := &eventPackage{
-		events:      make([]event, 0, minSliceSize),
+		events:      make([]Event, 0, minSliceSize),
 		contentType: eventTypeConnectionEvents,
 	}
 	var currentBuffer **eventPackage
@@ -215,7 +216,7 @@ func packagerLoop(logger *zap.SugaredLogger, msgIn <-chan event, packetsOut chan
 			// TODO I _really_ hope this creates a copy of the struct, otherwise what we're doing is incorrect
 			case packetsOut <- **currentBuffer:
 				// ok, allocate new buffer
-				(**currentBuffer).events = make([]event, 0, minSliceSize)
+				(**currentBuffer).events = make([]Event, 0, minSliceSize)
 			default:
 				// TODO what do?
 				if len((**currentBuffer).events) < maxSliceSize {
@@ -225,7 +226,7 @@ func packagerLoop(logger *zap.SugaredLogger, msgIn <-chan event, packetsOut chan
 					// Ok, let's drop them, I guess...
 					droppedEvents.Add(float64(len((**currentBuffer).events)))
 					logger.Warnf("dropping %d events to RabbitMQ due to backpressure", len((**currentBuffer).events))
-					(**currentBuffer).events = make([]event, 0, minSliceSize)
+					(**currentBuffer).events = make([]Event, 0, minSliceSize)
 				}
 			}
 		}

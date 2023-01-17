@@ -148,7 +148,7 @@ There is a [client implementation in Rust](https://github.com/trudi-group/ipfs-t
 Events sent by this plugin are of this format:
 ```go
 // The type sent to via TCP for pushed events.
-type event struct {
+type Event struct {
 	// The timestamp at which the event was recorded.
 	// This defines an ordering for events.
 	Timestamp time.Time `json:"timestamp"`

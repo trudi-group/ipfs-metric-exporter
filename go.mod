@@ -1,4 +1,4 @@
-module meplugin
+module github.com/trudi-group/ipfs-metric-exporter
 
 go 1.19
 
