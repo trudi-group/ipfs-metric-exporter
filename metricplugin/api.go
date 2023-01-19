@@ -5,7 +5,7 @@ import (
 
 	bsmsg "github.com/ipfs/go-bitswap/message"
 	pbmsg "github.com/ipfs/go-bitswap/message/pb"
-	"github.com/ipfs/go-cid"
+	cid "github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
