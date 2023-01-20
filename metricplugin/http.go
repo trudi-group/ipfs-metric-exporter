@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,6 +32,12 @@ const (
 	APIBroadcastCancelPath     = APIBasePath + "/broadcast_cancel"
 	APIBroadcastWantCancelPath = APIBasePath + "/broadcast_want_cancel"
 	APISamplePeerMetadataPath  = APIBasePath + "/sample_peer_metadata"
+)
+
+// API parameter constants.
+const (
+	// APIOnlyConnectedPeersParameter is the parameter for the SamplePeerMetadata function.
+	APIOnlyConnectedPeersParameter = "only_connected"
 )
 
 type httpServer struct {
@@ -129,12 +136,13 @@ func (s *httpServer) buildRoutes() *httprouter.Router {
 			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs\n"+
 			"POST %s broadcasts a Bitswap CANCEL message for a given list of CIDs\n"+
 			"POST %s broadcasts a Bitswap WANT message for a given list of CIDs, followed by a CANCEL message after a given amount of time\n"+
-			"GET  %s returns information about peers from the peerstore, and connection state\n",
+			"GET  %s returns information about peers from the peerstore, and connection state. The query parameter %s (bool) specifies whether to skip unconnected peers\n",
 			APIPingPath,
 			APIBroadcastWantPath,
 			APIBroadcastCancelPath,
 			APIBroadcastWantCancelPath,
-			APISamplePeerMetadataPath)
+			APISamplePeerMetadataPath,
+			APIOnlyConnectedPeersParameter)
 	})
 
 	router.GET(APIPingPath,
@@ -502,8 +510,9 @@ func broadcastBitswapWantCancel(api RPCAPI) apiFunction {
 }
 
 func samplePeerMetadata(api RPCAPI) apiFunction {
-	return func(_ *http.Request, _ httprouter.Params) (response, error) {
-		pmd, conns := api.SamplePeerMetadata()
+	return func(req *http.Request, _ httprouter.Params) (response, error) {
+		onlyConnected := strings.ToLower(req.URL.Query().Get(APIOnlyConnectedPeersParameter)) == "true"
+		pmd, conns := api.SamplePeerMetadata(onlyConnected)
 		ts := time.Now().UTC()
 
 		return samplePeerMetadataResponse{
