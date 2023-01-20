@@ -82,7 +82,7 @@ func (mep *MetricExporterPlugin) BroadcastBitswapWantCancel(cids []cid.Cid, seco
 func (*MetricExporterPlugin) Ping() {}
 
 // SamplePeerMetadata implements RPCAPI.
-func (mep *MetricExporterPlugin) SamplePeerMetadata() ([]PeerMetadata, int) {
+func (mep *MetricExporterPlugin) SamplePeerMetadata(onlyConnected bool) ([]PeerMetadata, int) {
 	// Get number of connections and peers in proximity,
 	// to have somewhat-consistent values.
 	peers := mep.api.Peerstore.Peers()
@@ -94,6 +94,11 @@ func (mep *MetricExporterPlugin) SamplePeerMetadata() ([]PeerMetadata, int) {
 		pmd := PeerMetadata{ID: p}
 		pmd.Multiaddrs = mep.api.Peerstore.Addrs(p)
 		pmd.Connectedness = mep.api.PeerHost.Network().Connectedness(p)
+
+		if onlyConnected && pmd.Connectedness != network.Connected {
+			// Skip
+			continue
+		}
 
 		if pmd.Connectedness == network.Connected {
 			conns := mep.api.PeerHost.Network().ConnsToPeer(p)

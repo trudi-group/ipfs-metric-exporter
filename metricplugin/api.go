@@ -98,7 +98,11 @@ type RPCAPI interface {
 	// It returns information about all peers of the peerstore (including past
 	// peers not currently connected) as well as the number of currently
 	// established connections.
-	SamplePeerMetadata() ([]PeerMetadata, int)
+	// The onlyConnected parameter specifies whether data should be filtered
+	// for currently connected peers. This can be useful, as the size of the
+	// peerstore, and thus the metadata returned by this funciton, grows without
+	// bound.
+	SamplePeerMetadata(onlyConnected bool) ([]PeerMetadata, int)
 }
 
 // PluginAPI describes the functionality provided by this monitor to remote
@@ -167,7 +171,7 @@ type PeerMetadata struct {
 
 	// The ID of the peer.
 	ID peer.ID `json:"peer_id"`
-	// The connectedness, i.e. current connection status.
+	// The connectedness, i.e., current connection status.
 	Connectedness network.Connectedness `json:"connectedness"`
 	// A list of known valid multiaddresses for this peer.
 	// If the peer is not currently connected, this information might be
@@ -191,7 +195,7 @@ type PeerMetadata struct {
 	// If this is null, we don't have latency information for the peer yet.
 	LatencyEWMA *time.Duration `json:"latency_ewma_ns"`
 
-	// Metadata about connected peers.
+	// Metadata about connected peers, optional.
 
 	// A list of multiaddresses to which we currently hold a connection.
 	ConnectedMultiaddrs []ma.Multiaddr `json:"connected_multiaddresses"`
