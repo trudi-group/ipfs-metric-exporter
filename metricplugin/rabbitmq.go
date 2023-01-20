@@ -226,7 +226,7 @@ func packagerLoop(logger *zap.SugaredLogger, msgIn <-chan Event, packetsOut chan
 					// Ok, let's drop them, I guess...
 					droppedEvents.Add(float64(len((**currentBuffer).events)))
 					logger.Warnf("dropping %d events to RabbitMQ due to backpressure", len((**currentBuffer).events))
-					(**currentBuffer).events = make([]Event, 0, minSliceSize)
+					(**currentBuffer).events = (**currentBuffer).events[:0]
 				}
 			}
 		}
