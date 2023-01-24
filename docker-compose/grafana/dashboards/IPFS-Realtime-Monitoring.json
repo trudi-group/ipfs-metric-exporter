@@ -46,7 +46,7 @@
         "uid": "P1809F7CD0C75ACF3"
       },
       "gridPos": {
-        "h": 23,
+        "h": 25,
         "w": 24,
         "x": 0,
         "y": 1
@@ -58,7 +58,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "# IPFS Monitoring Metrics\n\nVarious metrics extracted from IPFS nodes with unlimited connection capacity and the messages they receive.\n\n### Research Work\n\nAs a complement to this interactive dashboard, please have a look at our paper titled [Monitoring Data Requests in Decentralized Data Storage Systems: A Case Study of IPFS](https://arxiv.org/abs/2104.09202), which will be publish at this year's [ICDCS](https://icdcs2022.icdcs.org/) conference.\nFeel free to contact me (see below) with any questions or comments!\n\n### Metrics\n\nWe use and display:\n- Metrics built into IPFS\n- Real-time analyses of incoming Bitswap traffic, performed by our [real-time analysis client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client)\n- Metrics about/extracted from the IPFS node added by our [plugin](https://github.com/trudi-group/ipfs-metric-exporter), and about the plugin state itself\n\n**Most visualizations have a description.**\nYou can view that with the tiny `i` in the top-left corner of the visualization.\n\n#### Visualization Options\n\nYou can find a selector for the **visualized time range for all visualizations** in the top right-hand corner of the page.\nNext to that you can switch to **kiosk mode** to remove some more visual clutter, but this is of course optional.\nIn addition to that, each plot can be\n- viewed in full-screen mode by pressing `V` on its title-bar (or selecting \"View\" from its menu)\n- selected to show only specific time-series by clicking them in the legend. Multiple series can be selected by holding `Shift` while clicking\n- used to select a time range to display by selecting it with the mouse in the visualization\n\n#### Sections\n\nThis dashboard consists of multiple collapsible sections.\nEach section usually has some information about the data displayed and methodology used to obtain it.\nYou can also collapse this message using the \"Intro\" section above it.\nCollapsing sections helps performance, both on your and our end.\n\n### Setup\n\nWe're using [this docker compose](https://github.com/trudi-group/ipfs-metric-exporter/tree/master/docker-compose) setup.\nWe are continuously updating our infrastructure to keep up-to-date with latest releases of kubo and new features.\n\n#### Datasets\n\nThe data visualized here is produced and consumed in real-time, and stored in prometheus.\nWe also have large traces of Bitswap traffic.\nIf you're interested in any of the data, or have questions about it, please don't hesitate to contact me (see below).\nSee also our [privacy policy](https://monitoring.ipfs.trudi.group/privacy_policy.html) about data retention and usage policies.\n\n### Contact/See also\n\nBy Leo @ [Team TruDi](https://trudi.group), Berlin/Darmstadt.\nContact me via [email](mailto:leonhard.balduf@tu-darmstadt.de).\nSee also:\n- The [plugin](https://github.com/trudi-group/ipfs-metric-exporter) we develop to do this\n- The [analysis client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client) used to ingest Bitswap traffic",
+        "content": "# IPFS Monitoring Metrics\n\nVarious metrics extracted from IPFS nodes with unlimited connection capacity and the messages they receive.\n\n### Research Work\n\nAs a complement to this interactive dashboard, please have a look at our paper titled [Monitoring Data Requests in Decentralized Data Storage Systems: A Case Study of IPFS](https://arxiv.org/abs/2104.09202), which will be publish at this year's [ICDCS](https://icdcs2022.icdcs.org/) conference.\nFeel free to contact me (see below) with any questions or comments!\n\n### Metrics\n\nWe use and display:\n- Metrics built into IPFS\n- Real-time analyses of incoming Bitswap traffic, performed by our [real-time analysis client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client)\n- Metrics about/extracted from the IPFS node added by our [plugin](https://github.com/trudi-group/ipfs-metric-exporter), and about the plugin state itself\n\n**Most visualizations have a description.**\nYou can view that with the tiny `i` in the top-left corner of the visualization.\n\n#### Visualization Options\n\nYou can find a selector for the **visualized time range for all visualizations** in the top right-hand corner of the page.\nNext to that you can switch to **kiosk mode** to remove some more visual clutter, but this is of course optional.\nIn addition to that, each plot can be\n- viewed in full-screen mode by pressing `V` on its title-bar (or selecting \"View\" from its menu)\n- selected to show only specific time-series by clicking them in the legend. Multiple series can be selected by holding `Shift` while clicking\n- used to select a time range to display by selecting it with the mouse in the visualization\n\n#### Sections\n\nThis dashboard consists of multiple collapsible sections.\nEach section usually has some information about the data displayed and methodology used to obtain it.\nYou can also collapse this message using the \"Intro\" section above it.\nCollapsing sections helps performance, both on your and our end.\n\n### Setup\n\nWe're using [this docker compose](https://github.com/trudi-group/ipfs-metric-exporter/tree/master/docker-compose) setup.\nWe are continuously updating our infrastructure to keep up-to-date with latest releases of kubo and new features.\n\n#### Datasets\n\nThe data visualized here is produced and consumed in real-time, and stored in prometheus.\nWe also have large traces of Bitswap traffic.\nIf you're interested in any of the data, or have questions about it, please don't hesitate to contact me (see below).\nSee also our [privacy policy](https://monitoring.ipfs.trudi.group/privacy_policy.html) about data retention and usage policies.\n\n### Contact/See also\n\nBy Leo @ [Team TruDi](https://trudi.group), Berlin/Darmstadt.\nContact me via [email](mailto:leonhard.balduf@tu-darmstadt.de).\nSee also:\n- The [plugin](https://github.com/trudi-group/ipfs-metric-exporter) we develop to do this\n- The [analysis client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client) used to ingest Bitswap traffic\n- The [size estimator](https://github.com/trudi-group/ipfs-tools/tree/master/monitoring-size-estimator) we use to estimate network size",
         "mode": "markdown"
       },
       "pluginVersion": "9.3.2",
@@ -70,11 +70,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 26
       },
-      "id": 49,
+      "id": 73,
       "panels": [],
-      "title": "Bitswap Realtime Metrics",
+      "title": "Size Estimates",
       "type": "row"
     },
     {
@@ -83,19 +83,19 @@
         "uid": "P1809F7CD0C75ACF3"
       },
       "gridPos": {
-        "h": 15,
+        "h": 13,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 27
       },
-      "id": 51,
+      "id": 81,
       "options": {
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "### Bitswap Realtime Analysis\n\nOur [plugin](https://github.com/trudi-group/ipfs-metric-exporter) exports all incoming Bitswap traffic and connection events via a TCP server.\nWe have a [client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client), which connects to this, performs analyses, and exports results via Prometheus.\n\n#### Bitswap in a Nutshell\n\nBitswap sends messages between peers.\nFor recent versions of the protocol, each message may contain any combination of\n- A wantlist, which encapsulates requests. This can be either `full`, replacing the previous state at the remote peer, or incremental.\n- A list of blocks, addressed by their CID.\n- A list of block presence responses.\n\nA wantlist in turn contains a list of entries:\n- Request entries `WANT_HAVE` and `WANT_BLOCK`, in addition to an optional `send_dont_have` flag\n- `CANCEL` entries, which cancel an outstanding request.\n\nBlock presence responses are either `HAVE` or `DONT_HAVE`.\nThese are returned for `WANT_HAVE` requests.\nThe `DONT_HAVE` is optional, and returned if `send_dont_have` is requested.\nMost peers support this.\n\n#### Requests and Responses\n\nIn general, our monitoring nodes sit passively and record all incoming traffic.\nUsually, these incoming messages are requests only.  \nHowever, we recently added functionality to also query all of our peers via Bitswap, in a controlled manner.\nThis then leads to our monitors also received responses, in the form of blocks and block presences.\nThis generally happens in short, fast bursts, when we sample the network for a set of CIDs.\n\n#### Deduplication\n\nReal-time analyses performed use the raw, non-deduplicated Bitswap traffic recorded by the monitors.\nBitswap sends a lot of duplicate entries, most of which are useless, since the wantlist state is persisted on remote peers for as long as the connection is alive.\nThis is a known issue, and in the future we will also support analyzing deduplicated traffic.",
+        "content": "### Network Size Estimates\n\nEstimates of the total network size and the size of peer populations supporting given protocols.\nThis is calculated using the [monitoring size estimator](https://github.com/trudi-group/ipfs-tools/tree/master/monitoring-size-estimator) tool.\n\n#### Estimated Sizes\n\nThis estimates the size of the entire IPFS network, including DHT servers and clients.\n\nFor specific protocols, the two samples obtained by the monitor are filtered for peers indicating support for the given protocol.\nThese filtered samples are then used to estimate the total size of the subset of peers of the IPFS network supporting the given protocol.\n\n#### Estimators\n\nWe implement two estimators:\n- A hypergeometric estimator which is fast and simple, but only works for pairs of monitors.\n  For this estimator, we evaluate all pairs of monitors.\n- An estimator based on the coupon collector's problem.\n  This needs to be solved numerically and is somewhat slow, doesn't always return a result, but can operate on arbitrarily large sets of monitors.\n  As a simplification, we use the average number of peers over all monitors as the number of connections per monitor.\n\nFor details, please read our [paper](https://arxiv.org/abs/2104.09202).\n\n#### Caveats\n\nBoth estimators assume uniform sampling.\nWe have confirmed that this holds for large monitoring nodes, which makes estimates of the total network size probably somewhat accurate.\nThis also means that for protocols without special peer selection, accurate estimates are possible.\n\nHowever, this **does not work for subsets of peers with non-uniform connectivity**.\nIn particular, this **does not work for DHT size estimations**, because Kademlia connection are not a uniform sample of the total peer population.",
         "mode": "markdown"
       },
       "pluginVersion": "9.3.2",
@@ -106,41 +106,11 @@
         "type": "prometheus",
         "uid": "P1809F7CD0C75ACF3"
       },
-      "description": "Rate of Bitswap messages received per second.\nThis counts Bitswap _messages_, which in turn may include requests, responses, blocks, and block presences.\nCalculated over 30 minutes.",
+      "description": "Averages over all monitor pairs of the hypergeometric estimator and the coupon collector estimator.",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -151,8 +121,7 @@
                 "value": null
               }
             ]
-          },
-          "unit": "msg/s"
+          }
         },
         "overrides": []
       },
@@ -162,23 +131,22 @@
         "x": 0,
         "y": 40
       },
-      "id": 4,
+      "id": 79,
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
           "calcs": [
-            "min",
-            "mean",
-            "max"
+            "lastNotNull"
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "textMode": "auto"
       },
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -186,21 +154,21 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum(rate(bitswap_messages_received[30m])) by (monitor)",
+          "expr": "(avg(monitoring_size_estimator_hypergeom_size_estimate{protocol=\"\"}) by (instance, job) +  monitoring_size_estimator_coupon_size_estimate{protocol=\"\"})/2",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Bitswap Messages Received/s",
-      "type": "timeseries"
+      "title": "Average Network Size Estimate",
+      "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "P1809F7CD0C75ACF3"
       },
-      "description": "Rate of wantlists received per second, by whether they were full or incremental.\nThis counts messages for which the wantlist is not empty.\nCalculated over a 30 minute window.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -243,10 +211,13 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
-          },
-          "unit": "wl/s"
+          }
         },
         "overrides": []
       },
@@ -256,109 +227,14 @@
         "x": 12,
         "y": 40
       },
-      "id": 53,
+      "id": 75,
       "options": {
         "legend": {
           "calcs": [
             "min",
             "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Mean",
-          "sortDesc": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "(sum(rate(wantlists_received[30m])) by (monitor,full))",
-          "legendFormat": "{{monitor}}, full={{full}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Wantlists Received/s",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
-      },
-      "description": "Rate of wantlist entries received per second.\nIn sum over all entry types, request types only, and CANCEL types only.\nCalculated over a 30 minute window.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "entries/s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 48
-      },
-      "id": 59,
-      "options": {
-        "legend": {
-          "calcs": [
-            "min",
-            "mean",
-            "max"
+            "max",
+            "last"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -376,8 +252,8 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum(rate(wantlist_entries_received[30m])) by (monitor)",
-          "legendFormat": "{{monitor}} All Entries",
+          "expr": "monitoring_size_estimator_hypergeom_size_estimate{protocol=\"\"}",
+          "legendFormat": "Hypergeometric Estimator, {{monitor_pair}}",
           "range": true,
           "refId": "A"
         },
@@ -387,123 +263,14 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum(rate(wantlist_entries_received{entry_type!=\"cancel\"}[30m])) by (monitor)",
+          "expr": "monitoring_size_estimator_coupon_size_estimate{protocol=\"\"}",
           "hide": false,
-          "legendFormat": "{{monitor}} Requests",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(wantlist_entries_received{entry_type=\"cancel\"}[30m])) by (monitor)",
-          "hide": false,
-          "legendFormat": "{{monitor}} CANCELs",
-          "range": true,
-          "refId": "C"
-        }
-      ],
-      "title": "Wantlist Entries/s: Total, Requests Only, CANCEL Only",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
-      },
-      "description": "Rate of wantlist entries received per second, by entry type and send_dont_have flag.\nThis is calculated over a 30 minute window.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "entries/s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      },
-      "id": 47,
-      "options": {
-        "legend": {
-          "calcs": [
-            "min",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Mean",
-          "sortDesc": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(wantlist_entries_received{entry_type!=\"unknown\"}[30m])) by (monitor, entry_type, send_dont_have)",
-          "hide": false,
-          "legendFormat": "{{monitor}}, {{entry_type}}, send_dont_have={{send_dont_have}}",
+          "legendFormat": "Coupon Collector Estimator",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Wantlist Entries Received/s",
+      "title": "Size Estimates for the Entire Network by Estimator",
       "type": "timeseries"
     },
     {
@@ -554,6 +321,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
@@ -564,15 +335,16 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 48
       },
-      "id": 70,
+      "id": 76,
       "options": {
         "legend": {
           "calcs": [
             "min",
             "mean",
-            "max"
+            "max",
+            "last"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -592,13 +364,13 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum(rate(bitswap_messages_received[30m])) by (monitor, origin_is_gateway)",
-          "legendFormat": "{{monitor}}, public_gateway={{origin_is_gateway}}",
+          "expr": "monitoring_size_estimator_hypergeom_size_estimate{protocol!=\"\",protocol!~\".*kad.*\"}",
+          "legendFormat": "{{protocol}}, {{monitor_pair}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Bitswap Messages Received/s by Public Gateway Status",
+      "title": "Size Estimates per Protocol, Hypergeometric Estimator",
       "type": "timeseries"
     },
     {
@@ -649,6 +421,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
@@ -659,15 +435,16 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 48
       },
-      "id": 71,
+      "id": 77,
       "options": {
         "legend": {
           "calcs": [
             "min",
             "mean",
-            "max"
+            "max",
+            "last"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -687,194 +464,13 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum(rate(wantlist_entries_received{entry_type!=\"cancel\",origin_country!=\"\"}[30m])) by (monitor, entry_type, origin_is_gateway)",
+          "expr": "monitoring_size_estimator_coupon_size_estimate{protocol!=\"\",protocol!~\".*kad.*\"}",
+          "legendFormat": "{{protocol}}, {{monitor_pair}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Wantlist Entries Received/s by Public Gateway Status",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {},
-      "description": "The rate of block presence entries received per second.\nCalculated over a 30 minute window.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "pres/s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 64
-      },
-      "id": 57,
-      "options": {
-        "legend": {
-          "calcs": [
-            "min",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(bitswap_block_presences_received[30m])) by (monitor, presence_type)",
-          "legendFormat": "{{monitor}} {{presence_type}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Block Presences Received/s",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {},
-      "description": "The rate of blocks received per second.\nCalculate over a 30 minute window.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "blocks/s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 64
-      },
-      "id": 55,
-      "options": {
-        "legend": {
-          "calcs": [
-            "min",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(bitswap_blocks_received[30m])) by (monitor)",
-          "legendFormat": "{{monitor}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Blocks Received/s",
+      "title": "Size Estimates per Protocol, Coupon Collector Estimator",
       "type": "timeseries"
     },
     {
@@ -883,7 +479,813 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 56
+      },
+      "id": 49,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "gridPos": {
+            "h": 15,
+            "w": 24,
+            "x": 0,
+            "y": 70
+          },
+          "id": 51,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "### Bitswap Realtime Analysis\n\nOur [plugin](https://github.com/trudi-group/ipfs-metric-exporter) exports all incoming Bitswap traffic and connection events via a TCP server.\nWe have a [client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client), which connects to this, performs analyses, and exports results via Prometheus.\n\n#### Bitswap in a Nutshell\n\nBitswap sends messages between peers.\nFor recent versions of the protocol, each message may contain any combination of\n- A wantlist, which encapsulates requests. This can be either `full`, replacing the previous state at the remote peer, or incremental.\n- A list of blocks, addressed by their CID.\n- A list of block presence responses.\n\nA wantlist in turn contains a list of entries:\n- Request entries `WANT_HAVE` and `WANT_BLOCK`, in addition to an optional `send_dont_have` flag\n- `CANCEL` entries, which cancel an outstanding request.\n\nBlock presence responses are either `HAVE` or `DONT_HAVE`.\nThese are returned for `WANT_HAVE` requests.\nThe `DONT_HAVE` is optional, and returned if `send_dont_have` is requested.\nMost peers support this.\n\n#### Requests and Responses\n\nIn general, our monitoring nodes sit passively and record all incoming traffic.\nUsually, these incoming messages are requests only.  \nHowever, we recently added functionality to also query all of our peers via Bitswap, in a controlled manner.\nThis then leads to our monitors also received responses, in the form of blocks and block presences.\nThis generally happens in short, fast bursts, when we sample the network for a set of CIDs.\n\n#### Deduplication\n\nReal-time analyses performed use the raw, non-deduplicated Bitswap traffic recorded by the monitors.\nBitswap sends a lot of duplicate entries, most of which are useless, since the wantlist state is persisted on remote peers for as long as the connection is alive.\nThis is a known issue, and in the future we will also support analyzing deduplicated traffic.",
+            "mode": "markdown"
+          },
+          "pluginVersion": "9.3.2",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "description": "Rate of Bitswap messages received per second.\nThis counts Bitswap _messages_, which in turn may include requests, responses, blocks, and block presences.\nCalculated over 30 minutes.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "msg/s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 85
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(bitswap_messages_received[30m])) by (monitor)",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Bitswap Messages Received/s",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "description": "Rate of wantlists received per second, by whether they were full or incremental.\nThis counts messages for which the wantlist is not empty.\nCalculated over a 30 minute window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "wl/s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 85
+          },
+          "id": 53,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "(sum(rate(wantlists_received[30m])) by (monitor,full))",
+              "legendFormat": "{{monitor}}, full={{full}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Wantlists Received/s",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "description": "Rate of wantlist entries received per second.\nIn sum over all entry types, request types only, and CANCEL types only.\nCalculated over a 30 minute window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "entries/s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 93
+          },
+          "id": 59,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(wantlist_entries_received[30m])) by (monitor)",
+              "legendFormat": "{{monitor}} All Entries",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(wantlist_entries_received{entry_type!=\"cancel\"}[30m])) by (monitor)",
+              "hide": false,
+              "legendFormat": "{{monitor}} Requests",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(wantlist_entries_received{entry_type=\"cancel\"}[30m])) by (monitor)",
+              "hide": false,
+              "legendFormat": "{{monitor}} CANCELs",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Wantlist Entries/s: Total, Requests Only, CANCEL Only",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "description": "Rate of wantlist entries received per second, by entry type and send_dont_have flag.\nThis is calculated over a 30 minute window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "entries/s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 93
+          },
+          "id": 47,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(wantlist_entries_received{entry_type!=\"unknown\"}[30m])) by (monitor, entry_type, send_dont_have)",
+              "hide": false,
+              "legendFormat": "{{monitor}}, {{entry_type}}, send_dont_have={{send_dont_have}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Wantlist Entries Received/s",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 101
+          },
+          "id": 70,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(bitswap_messages_received[30m])) by (monitor, origin_is_gateway)",
+              "legendFormat": "{{monitor}}, public_gateway={{origin_is_gateway}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Bitswap Messages Received/s by Public Gateway Status",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 101
+          },
+          "id": 71,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(wantlist_entries_received{entry_type!=\"cancel\",origin_country!=\"\"}[30m])) by (monitor, entry_type, origin_is_gateway)",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Wantlist Entries Received/s by Public Gateway Status",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {},
+          "description": "The rate of block presence entries received per second.\nCalculated over a 30 minute window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "pres/s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 109
+          },
+          "id": 57,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(bitswap_block_presences_received[30m])) by (monitor, presence_type)",
+              "legendFormat": "{{monitor}} {{presence_type}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Block Presences Received/s",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {},
+          "description": "The rate of blocks received per second.\nCalculate over a 30 minute window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "blocks/s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 109
+          },
+          "id": 55,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(bitswap_blocks_received[30m])) by (monitor)",
+              "legendFormat": "{{monitor}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Blocks Received/s",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Bitswap Realtime Metrics",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
       },
       "id": 2,
       "panels": [
@@ -896,7 +1298,7 @@
             "h": 20,
             "w": 24,
             "x": 0,
-            "y": 73
+            "y": 71
           },
           "id": 45,
           "options": {
@@ -956,8 +1358,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -969,7 +1370,7 @@
             "h": 11,
             "w": 12,
             "x": 0,
-            "y": 93
+            "y": 91
           },
           "id": 61,
           "options": {
@@ -1052,8 +1453,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1065,7 +1465,7 @@
             "h": 11,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 91
           },
           "id": 11,
           "options": {
@@ -1118,8 +1518,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1131,7 +1530,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 104
+            "y": 102
           },
           "id": 6,
           "options": {
@@ -1184,8 +1583,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1197,7 +1595,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 104
+            "y": 102
           },
           "id": 9,
           "options": {
@@ -1250,8 +1648,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1263,7 +1660,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 104
+            "y": 102
           },
           "id": 68,
           "options": {
@@ -1310,7 +1707,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 73
+        "y": 58
       },
       "id": 43,
       "panels": [
@@ -1323,7 +1720,7 @@
             "h": 12,
             "w": 24,
             "x": 0,
-            "y": 113
+            "y": 161
           },
           "id": 65,
           "options": {
@@ -1384,8 +1781,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1397,7 +1793,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 125
+            "y": 173
           },
           "id": 27,
           "options": {
@@ -1475,8 +1871,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1488,7 +1883,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 125
+            "y": 173
           },
           "id": 29,
           "options": {
@@ -1571,8 +1966,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1584,7 +1978,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 133
+            "y": 181
           },
           "id": 31,
           "options": {
@@ -1677,8 +2071,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1690,7 +2083,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 133
+            "y": 181
           },
           "id": 33,
           "options": {
@@ -1770,8 +2163,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1783,7 +2175,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 141
+            "y": 189
           },
           "id": 39,
           "options": {
@@ -1887,8 +2279,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1900,7 +2291,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 141
+            "y": 189
           },
           "id": 35,
           "options": {
@@ -1980,8 +2371,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1993,7 +2383,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 149
+            "y": 197
           },
           "id": 37,
           "options": {
@@ -2073,8 +2463,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2090,7 +2479,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 149
+            "y": 197
           },
           "id": 41,
           "options": {
@@ -2135,7 +2524,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 59
       },
       "id": 25,
       "panels": [
@@ -2148,7 +2537,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 75
+            "y": 60
           },
           "id": 63,
           "options": {
@@ -2157,7 +2546,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "### IPFS Process and Go Runtime Metrics\r\n\r\nThis lists metrics exported by IPFS and the Go runtime about themselves.",
+            "content": "### Process and Go Runtime Metrics\r\n\r\nThis lists metrics exported by IPFS and the Go runtime, as well as system metrics.",
             "mode": "markdown"
           },
           "pluginVersion": "9.3.2",
@@ -2222,7 +2611,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 78
+            "y": 63
           },
           "id": 15,
           "options": {
@@ -2248,7 +2637,7 @@
                 "uid": "P1809F7CD0C75ACF3"
               },
               "editorMode": "code",
-              "expr": "irate(process_cpu_seconds_total{job=\"kubo\"}[30m])",
+              "expr": "irate(process_cpu_seconds_total[30m])",
               "legendFormat": "{{instance}}",
               "range": true,
               "refId": "A"
@@ -2319,7 +2708,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 78
+            "y": 63
           },
           "id": 19,
           "options": {
@@ -2345,10 +2734,22 @@
                 "uid": "P1809F7CD0C75ACF3"
               },
               "editorMode": "code",
-              "expr": "go_memstats_alloc_bytes{job=\"kubo\"}",
+              "expr": "go_memstats_alloc_bytes",
               "legendFormat": "{{instance}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "process_resident_memory_bytes{job!=\"kubo\", job!=\"node-exporter\"}",
+              "hide": false,
+              "legendFormat": "{{job}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Allocated Memory",
@@ -2417,7 +2818,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 86
+            "y": 71
           },
           "id": 23,
           "options": {
@@ -2443,7 +2844,7 @@
                 "uid": "P1809F7CD0C75ACF3"
               },
               "editorMode": "code",
-              "expr": "process_open_fds{job=\"kubo\"}",
+              "expr": "process_open_fds",
               "legendFormat": "{{instance}}",
               "range": true,
               "refId": "A"
@@ -2510,7 +2911,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 86
+            "y": 71
           },
           "id": 17,
           "options": {
@@ -2604,7 +3005,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 94
+            "y": 79
           },
           "id": 21,
           "options": {
@@ -2668,7 +3069,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 94
+            "y": 79
           },
           "id": 13,
           "options": {
@@ -2704,9 +3105,104 @@
           ],
           "title": "IPFS and Go Version",
           "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 87
+          },
+          "id": 83,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "mean",
+                "max",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P1809F7CD0C75ACF3"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(node_cpu_seconds_total{mode!=\"idle\"}[5m])) by(instance,mode)",
+              "legendFormat": "{{mode}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "System CPU Usage",
+          "type": "timeseries"
         }
       ],
-      "title": "IPFS/Runtime Metrics",
+      "title": "Runtime/System Metrics",
       "type": "row"
     }
   ],
