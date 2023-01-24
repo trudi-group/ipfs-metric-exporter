@@ -19,6 +19,11 @@ scrape_configs:
       - targets:
         - 'monitoring-client:8088'
 
+  - job_name: 'monitoring-size-estimator'
+    static_configs:
+      - targets:
+          - 'size-estimator:8088'
+
   # RabbitMQ, per-object metrics
   - job_name: 'rabbitmq-per-object'
     metrics_path: /metrics/per-object

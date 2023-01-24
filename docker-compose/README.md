@@ -8,6 +8,8 @@ This uses two images you'll need to build locally:
 
 - `bitswap-monitoring-client:latest` is the monitoring client.
     This is most easily built using [the build script in the ipfs-tools repository](https://github.com/trudi-group/ipfs-tools/blob/master/build-docker-images.sh).
+- `monitoring-size-estimator:latest` is the size estimator.
+    This, too, is most easily built using above build script.
 - `kubo-mexport:latest` is a recompiled kubo with our plugin.
     This is _not_ actually `kubo:latest`, but some specific version.
     This is most easily built using [the build script in this repository](../build-in-docker.sh).
@@ -58,6 +60,12 @@ There's some configuration and provisioning going on, via [rabbitmq.conf](rabbit
 This is the [bitswap-monitoring-client](https://github.com/trudi-group/ipfs-tools/tree/master/bitswap-monitoring-client).
 It's running the image produced by [this Dockerfile](https://github.com/trudi-group/ipfs-tools/blob/master/Dockerfile.bitswap-monitoring-client).
 The configuration is in [monitoring_client_config.yaml](./monitoring_client_config.yaml).
+
+### Monitoring Size Estimator
+
+This is the [monitoring-size-estimator](https://github.com/trudi-group/ipfs-tools/tree/master/monitoring-size-estimator).
+It's running the image produced by [this Dockerfile](https://github.com/trudi-group/ipfs-tools/blob/master/Dockerfile.monitoring-size-estimator).
+The configuration is in [monitoring_size_estimator_config.yaml](./monitoring_size_estimator_config.yaml).
 
 ### GeoIPUpdate
 

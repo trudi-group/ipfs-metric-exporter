@@ -112,6 +112,30 @@ services:
       daemon02:
         condition: service_healthy
 
+  size-estimator:
+    image: "monitoring-size-estimator:latest"
+    restart: unless-stopped
+    expose:
+      - 8088
+    volumes:
+      - ./monitoring_size_estimator_config.yaml:/ipfs-tools/config/monitoring-size-estimator-config.yaml
+    environment:
+      - RUST_LOG=info
+    links:
+      - rabbitmq
+      - prometheus
+      - daemon01
+      - daemon02
+    depends_on:
+      geoipupdate:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      daemon01:
+        condition: service_healthy
+      daemon02:
+        condition: service_healthy
+
   grafana:
     # https://hub.docker.com/r/grafana/grafana/tags
     image: grafana/grafana:9.3.2

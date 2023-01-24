@@ -1,0 +1,14 @@
+# This is a config file for the monitoring-size-estimator tool.
+
+# Address to listen and serve prometheus metrics on.
+prometheus_address: "0.0.0.0:8088"
+
+# The interval to sleep between estimates, in seconds.
+sample_interval_seconds: 60
+
+# Monitors to connect to.
+monitors:
+  - plugin_api_address: "http://daemon01:8432"
+    name: "daemon01"
+  - plugin_api_address: "http://daemon02:8432"
+    name: "daemon02"

@@ -24,7 +24,7 @@ ipfs config --json 'Plugins.Plugins.metric-export-plugin' '{
     "AgentVersionCutOff": 50,
     "HTTPServerConfig": {
       "ListenAddresses": [
-        "localhost:8432"
+        "0.0.0.0:8432"
       ]
     },
     "PopulatePrometheusInterval": 10
