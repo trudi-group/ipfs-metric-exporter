@@ -16,8 +16,10 @@ Building on bullseye gives us a libc version which is a bit older.
 This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
 
 The [Dockerfile](./Dockerfile) implements kubo with the bundled plugin.
+Running `make gen-out` will build the image and extract the binaries for kubo and the plugin to `./out`.
 
-Running the command `make gen-out` will build the image and export the binaries for IPFS and the plugin to `./out`.
+You can run the binary and matching plugin locally, or via the modified kubo container.
+See [the configuration for our monitoring setup](./docker-compose/001_configure_ipfs.sh) for configuration and installation instructions.
 
 ### Manually
 
@@ -42,6 +44,38 @@ Use `make build` to build the plugin and `make install` to copy the compiled plu
 Manually, building with `go build -buildmode=plugin -o mexport.so` should also work.
 This will produce a `mexport.so` library which needs to be placed in the IPFS plugin directory, which is
 `$IPFS_PATH/plugins` by default.
+
+## Updating
+
+Updating for a new version of kubo is usually simple:
+
+```
+# Update dependencies
+go get github.com/ipfs/kubo@<new version>
+
+# Do some housekeeping, I guess?
+go mod tidy
+go mod download
+go mod verify
+```
+
+Then update the version tags in the `Dockerfile`.
+
+If required, update the configuration scripts in `docker-compose/`.
+
+### Check
+
+To see if things work, first compile:
+```
+make gen-out
+```
+then run the monitoring setup locally:
+```
+cd docker-compose
+docker compose down --volumes
+docker compose up
+```
+and see if that works.
 
 ## Configuration
 

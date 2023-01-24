@@ -36,8 +36,10 @@ gen-out:
 	docker create --name extract kubo-mexport
 	mkdir -p out
 	docker cp extract:/usr/local/bin/ipfs ./out/
-	docker cp extract:/mexport-plugin/mexport-v0.17.0-docker.so ./out/
+	docker cp extract:/mexport-plugin ./out/
 	docker rm extract
+	mv ./out/mexport-plugin/*.so ./out/
+	rm -R ./out/mexport-plugin
 
 build: mexport.so
 	@echo "Built against" $(IPFS_VERSION)
