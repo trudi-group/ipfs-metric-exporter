@@ -10,9 +10,6 @@ This uses two images you'll need to build locally:
     This is most easily built using [the build script in the ipfs-tools repository](https://github.com/trudi-group/ipfs-tools/blob/master/build-docker-images.sh).
 - `monitoring-size-estimator:latest` is the size estimator.
     This, too, is most easily built using above build script.
-- `kubo-mexport:latest` is a recompiled kubo with our plugin.
-    This is _not_ actually `kubo:latest`, but some specific version.
-    This is most easily built using [the build script in this repository](../build-in-docker.sh).
 
 ## Running
 
