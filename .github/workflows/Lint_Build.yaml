@@ -43,10 +43,6 @@ jobs:
           echo "${REVIVE_OUTPUT}"
           exit 1
         fi
-    - name: Build
-      run: go build -v -buildmode=plugin -o mexport.so
-    - name: Build Docker Image
-      run: ./build-in-docker.sh
 
   unit:
     name: Unit Tests
