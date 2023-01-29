@@ -18,10 +18,7 @@ This gives us compatibility with slightly older systems (e.g. Ubuntu LTS release
 The [builder Dockerfile](./Dockerfile.builder) implements a builder stage.
 The resulting binaries are placed in `/usr/local/bin/ipfs/` inside the image.
 
-The [kubo Dockerfile](./Dockerfile.kubo) implements kubo with the bundled plugin.
-
-The [build-in-docker.sh](./build-in-docker.sh) script builds these images.
-It also and copies the produced binaries to the `out/` directory of the project.
+The [Dockerfile](./Dockerfile) implements kubo with the bundled plugin.
 
 ### Manually
 
