@@ -36,8 +36,6 @@ gen-out:
 	docker create --name extract kubo-mexport
 	docker cp extract:/usr/local/bin/ipfs ./out/
 	docker rm extract
-	mv out/ipfs/* out
-	rm -R out/ipfs
 
 build: mexport.so
 	@echo "Built against" $(IPFS_VERSION)
