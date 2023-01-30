@@ -46,7 +46,9 @@ jobs:
     - name: Build
       run: go build -v -buildmode=plugin -o mexport.so
     - name: Build Docker image
-      run: docker build .
+      run: |
+        docker build -t kubo-mexport .
+        make gen-out
 
   unit:
     name: Unit Tests
