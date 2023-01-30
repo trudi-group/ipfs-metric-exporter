@@ -32,10 +32,11 @@ mexport.so: main.go go.mod
 	chmod +x "$@"
 
 gen-out:
-	mkdir -p out
+	docker build -t kubo-mexport .
 	docker create --name extract kubo-mexport
+	mkdir -p out
 	docker cp extract:/usr/local/bin/ipfs ./out/
-	docker cp extract:/mexport-plugin/* ./out/
+	docker cp extract:/mexport-plugin/mexport-v0.17.0-docker.so ./out/
 	docker rm extract
 
 build: mexport.so
