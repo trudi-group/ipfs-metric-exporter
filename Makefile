@@ -33,7 +33,7 @@ mexport.so: main.go go.mod
 
 gen-out:
 	mkdir -p out
-	docker create --name extract $(docker build .)
+	docker create --name extract kubo-mexport
 	docker cp extract:/usr/local/bin/ipfs ./out/
 	docker rm extract
 	mv out/ipfs/* out
