@@ -31,6 +31,14 @@ mexport.so: main.go go.mod
 	$(GOCC) build $(GOFLAGS) -buildmode=plugin -o "$@" "$<"
 	chmod +x "$@"
 
+gen-out:
+	mkdir -p out
+	docker create --name extract $(docker build .)
+	docker cp extract:/usr/local/bin/ipfs ./out/
+	docker rm extract
+	mv out/ipfs/* out
+	rm -R out/ipfs
+
 build: mexport.so
 	@echo "Built against" $(IPFS_VERSION)
 
