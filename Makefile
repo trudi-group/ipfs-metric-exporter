@@ -35,6 +35,7 @@ gen-out:
 	mkdir -p out
 	docker create --name extract kubo-mexport
 	docker cp extract:/usr/local/bin/ipfs ./out/
+	docker cp extract:/mexport-plugin/* ./out/
 	docker rm extract
 
 build: mexport.so

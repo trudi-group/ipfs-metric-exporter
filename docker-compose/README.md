@@ -39,7 +39,7 @@ LOCAL_IP=127.0.0.1
 ### Monitors
 
 We're running two monitors using our [plugin](../README.md).
-They are using the [Dockerfile.kubo](../Dockerfile.kubo) image, which is a recompiled stock kubo with our plugin.
+They are using the [Dockerfile](../Dockerfile) image, which is a recompiled stock kubo with our plugin.
 The nodes are configured via [001_configure_ipfs.sh](./001_configure_ipfs.sh).
 The second node is additionally configured using [002_configure_second_daemon_addresses.sh](./002_configure_second_daemon_addresses.sh), which configures the daemon to use different ports.
 This is necessary, because the daemon can figure out its own public IP, but apparently not its port, and then announces a wrong port if we only remap it using Docker.
