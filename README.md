@@ -17,6 +17,8 @@ This gives us compatibility with slightly older systems (e.g. Ubuntu LTS release
 
 The [Dockerfile](./Dockerfile) implements kubo with the bundled plugin.
 
+Running the command `make gen-out` will build the image and export the binaries for IPFS and the plugin to `./out`.
+
 ### Manually
 
 Due to a [bug in the Go compiler](https://github.com/cespare/xxhash/issues/54) it is not possible to build plugins
