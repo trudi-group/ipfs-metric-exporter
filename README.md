@@ -15,13 +15,9 @@ This is nice, because you get reproducible, matching binaries, compiled with Go 
 Building on bullseye gives us a libc version which is a bit older.
 This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
 
-The [builder Dockerfile](./Dockerfile.builder) implements a builder stage.
-The resulting binaries are placed in `/usr/local/bin/ipfs/` inside the image.
+The [Dockerfile](./Dockerfile) implements kubo with the bundled plugin.
 
-The [kubo Dockerfile](./Dockerfile.kubo) implements kubo with the bundled plugin.
-
-The [build-in-docker.sh](./build-in-docker.sh) script builds these images.
-It also and copies the produced binaries to the `out/` directory of the project.
+Running the command `make gen-out` will build the image and export the binaries for IPFS and the plugin to `./out`.
 
 ### Manually
 

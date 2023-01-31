@@ -1,5 +1,8 @@
-# Binaries produced by the build-in-docker.sh script.
-/out
-
-# GitHub specific things.
 /.github
+/out
+/docker-compose
+README.md
+LICENSE
+Makefile
+*.sh
+.gitignore

@@ -10,9 +10,6 @@ This uses two images you'll need to build locally:
     This is most easily built using [the build script in the ipfs-tools repository](https://github.com/trudi-group/ipfs-tools/blob/master/build-docker-images.sh).
 - `monitoring-size-estimator:latest` is the size estimator.
     This, too, is most easily built using above build script.
-- `kubo-mexport:latest` is a recompiled kubo with our plugin.
-    This is _not_ actually `kubo:latest`, but some specific version.
-    This is most easily built using [the build script in this repository](../build-in-docker.sh).
 
 ## Running
 
@@ -42,7 +39,7 @@ LOCAL_IP=127.0.0.1
 ### Monitors
 
 We're running two monitors using our [plugin](../README.md).
-They are using the [Dockerfile.kubo](../Dockerfile.kubo) image, which is a recompiled stock kubo with our plugin.
+They are using the [Dockerfile](../Dockerfile) image, which is a recompiled stock kubo with our plugin.
 The nodes are configured via [001_configure_ipfs.sh](./001_configure_ipfs.sh).
 The second node is additionally configured using [002_configure_second_daemon_addresses.sh](./002_configure_second_daemon_addresses.sh), which configures the daemon to use different ports.
 This is necessary, because the daemon can figure out its own public IP, but apparently not its port, and then announces a wrong port if we only remap it using Docker.

@@ -45,8 +45,8 @@ jobs:
         fi
     - name: Build
       run: go build -v -buildmode=plugin -o mexport.so
-    - name: Build Docker Image
-      run: ./build-in-docker.sh
+    - name: Build Docker image and export binaries
+      run: make gen-out
 
   unit:
     name: Unit Tests

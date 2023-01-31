@@ -32,3 +32,9 @@ RUN go build -v -buildmode=plugin -o /usr/local/bin/ipfs/mexport-v0.17.0-docker.
 RUN chmod +x /usr/local/bin/ipfs/mexport-v0.17.0-docker.so
 
 # Artifacts should now be in /usr/local/bin/ipfs/
+
+# Modifies the ipfs/kubo image to contain our plugin and a matching kubo version.
+FROM ipfs/kubo:v0.17.0
+
+COPY --from=builder /usr/local/bin/ipfs/ipfs-v0.17.0-docker /usr/local/bin/ipfs
+COPY --from=builder /usr/local/bin/ipfs/mexport-v0.17.0-docker.so /mexport-plugin/

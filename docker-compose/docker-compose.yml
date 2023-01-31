@@ -32,7 +32,8 @@ services:
 
   daemon01:
     hostname: 'docker_compose_monitor_01'
-    image: "kubo-mexport:latest"
+    build:
+      context: ..
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -54,7 +55,8 @@ services:
 
   daemon02:
     hostname: 'docker_compose_monitor_02'
-    image: "kubo-mexport:latest"
+    build:
+      context: ..
     restart: unless-stopped
     depends_on:
       rabbitmq:
