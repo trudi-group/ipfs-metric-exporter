@@ -12,11 +12,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-    - name: Build Docker Image
-      run: ./build-in-docker.sh
+    - name: Build Docker Image and Extract Build Artifacts
+      run: make gen-out
     - uses: "marvinpinto/action-automatic-releases@latest"
       with: 
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         title: "Dev Build"
         automatic_release_tag: "latest"
         files: out/*
+    - name: Build and Push Docker Image
+      uses: macbre/push-to-ghcr@master
+      with:
+        image_name: ${{ github.repository_owner }}/kubo-mexport
+        github_token: ${{ secrets.GITHUB_TOKEN }}

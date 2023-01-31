@@ -32,8 +32,8 @@ mexport.so: main.go go.mod
 	chmod +x "$@"
 
 gen-out:
-	docker build -t kubo-mexport .
-	docker create --name extract kubo-mexport
+	docker build -t trudi-group/kubo-mexport .
+	docker create --name extract trudi-group/kubo-mexport
 	mkdir -p out
 	docker cp extract:/usr/local/bin/ipfs ./out/
 	docker cp extract:/mexport-plugin ./out/
