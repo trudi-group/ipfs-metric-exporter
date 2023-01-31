@@ -34,12 +34,30 @@ GRAFANA_ADMIN_PASSWORD=<some password>
 LOCAL_IP=127.0.0.1
 ```
 
+### Updating
+
+```shell
+source .env
+
+docker compose down
+
+# Remove old configuration
+docker volume rm ${COMPOSE_PROJECT_NAME}_ipfs_01_path
+docker volume rm ${COMPOSE_PROJECT_NAME}_ipfs_02_path
+
+# If Grafana dashboards were updated:
+docker volume rm ${COMPOSE_PROJECT_NAME}_grafana_data
+
+# Restart
+docker compose up
+```
+
 ## Components
 
 ### Monitors
 
 We're running two monitors using our [plugin](../README.md).
-They are using the [Dockerfile](../Dockerfile) image, which is a recompiled stock kubo with our plugin.
+They are using the [Dockerfile](../Dockerfile) in the parent directory, which is a recompiled stock kubo with our plugin.
 The nodes are configured via [001_configure_ipfs.sh](./001_configure_ipfs.sh).
 The second node is additionally configured using [002_configure_second_daemon_addresses.sh](./002_configure_second_daemon_addresses.sh), which configures the daemon to use different ports.
 This is necessary, because the daemon can figure out its own public IP, but apparently not its port, and then announces a wrong port if we only remap it using Docker.

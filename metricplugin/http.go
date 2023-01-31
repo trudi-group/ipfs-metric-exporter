@@ -410,7 +410,14 @@ func broadcastBitswapWant(api RPCAPI) apiFunction {
 			return nil, ErrInvalidRequest
 		}
 
-		res := api.BroadcastBitswapWant(req.Cids)
+		res, err := api.BroadcastBitswapWant(req.Cids)
+		if err != nil {
+			if err == ErrBitswapProbeDisabled {
+				return nil, newPresentableError(400, err.Error())
+			}
+			return nil, err
+		}
+
 		resp := make([]broadcastBitswapWantResponseEntry, 0, len(res))
 		for _, entry := range res {
 			var errMsg *string
@@ -442,7 +449,13 @@ func broadcastBitswapCancel(api RPCAPI) apiFunction {
 			return nil, ErrInvalidRequest
 		}
 
-		res := api.BroadcastBitswapCancel(req.Cids)
+		res, err := api.BroadcastBitswapCancel(req.Cids)
+		if err != nil {
+			if err == ErrBitswapProbeDisabled {
+				return nil, newPresentableError(400, err.Error())
+			}
+			return nil, err
+		}
 
 		resp := make([]broadcastBitswapCancelResponseEntry, 0, len(res))
 		for _, entry := range res {
@@ -474,7 +487,13 @@ func broadcastBitswapWantCancel(api RPCAPI) apiFunction {
 			return nil, ErrInvalidRequest
 		}
 
-		res := api.BroadcastBitswapWantCancel(req.Cids, uint(req.SecondsBeforeCancel))
+		res, err := api.BroadcastBitswapWantCancel(req.Cids, uint(req.SecondsBeforeCancel))
+		if err != nil {
+			if err == ErrBitswapProbeDisabled {
+				return nil, newPresentableError(400, err.Error())
+			}
+			return nil, err
+		}
 
 		resp := make([]broadcastBitswapWantCancelResponseEntry, 0, len(res))
 		for _, entry := range res {

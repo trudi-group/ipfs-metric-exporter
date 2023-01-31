@@ -89,6 +89,7 @@ This plugin can be configured using the usual IPFS configuration.
         "Config": {
           "PopulatePrometheusInterval": 10,
           "AgentVersionCutOff": 20,
+          "EnableBitswapDiscoveryProbe": false,
           "AMQPServerAddress": "amqp://localhost:5672",
           "MonitorName": "<some name, defaults to hostname>"
           "HTTPServerConfig": {
@@ -116,6 +117,15 @@ The default is ten seconds.
 The plugin collects metrics about the agent versions of connected peers.
 This value configures a cutoff for how many agent version strings should be reported to prometheus.
 The remainder (everything that doesn't fit within the cutoff) is summed and reported as `others` to prometheus.
+
+### `EnableBitswapDiscoveryProbe`
+
+This controls whether active Bitswap discovery probing functionality should be made available.
+The way this works is through maintaining an active Bitswap stream to every connected peer.
+Discovery requests (i.e. `WANT_HAVE` or `WANT_BLOCK`, depending on whether the peer supports it) can then be broadcast to all connected peers.
+This does not use the usual Bitswap discovery code path, which allows us to _only_ search Bitswap, and not the DHT.
+
+For recent versions of the network and large monitoring nodes, this is too resource-intensive and should probably not be enabled.
 
 ### `AMQPServerAddress`
 
