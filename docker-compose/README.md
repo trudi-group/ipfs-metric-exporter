@@ -25,6 +25,7 @@ You may need to change some of the addresses in the docker compose file accordin
 - `GEOIP_LICENSE_KEY` The license key for MaxMind's GeoLite database.
 - `GRAFANA_ADMIN_PASSWORD` The password for the Grafana `admin` user.
 - `LOCAL_IP` The IP on which to expose many _security_critical_ things, such as the kubo API. **Make sure you understand the implications of setting this to anything but `127.0.0.1`.**
+- `COMPOSE_PROJECT_NAME` The  namespace for `docker compose`. Usually `docker compose` uses the name of the directory for this, but that's not a useful name in our case. It's used to name containers and volumes.
 
 It's easy to supply these via a `.env` file, like so:
 ```shell
@@ -32,14 +33,22 @@ GEOIP_ACCOUNT_ID=<numeric ID>
 GEOIP_LICENSE_KEY=<alphanumeric key>
 GRAFANA_ADMIN_PASSWORD=<some password>
 LOCAL_IP=127.0.0.1
+COMPOSE_PROJECT_NAME=ipfs-monitoring
 ```
 
 ### Updating
 
 ```shell
-source .env
-
+# Stop running containers
 docker compose down
+
+# Update sources
+pushd ..
+git pull origin master
+popd
+
+# Load COMPOSE_PROJECT_NAME
+source .env
 
 # Remove old configuration
 docker volume rm ${COMPOSE_PROJECT_NAME}_ipfs_01_path
