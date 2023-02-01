@@ -1,6 +1,12 @@
+# Github-specifics
 /.github
+
+# Build artifacts
 /out
+
+# The docker compose setup
 /docker-compose
+
 README.md
 LICENSE
 Makefile

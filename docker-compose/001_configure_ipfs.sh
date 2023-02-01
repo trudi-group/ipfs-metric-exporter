@@ -27,7 +27,8 @@ ipfs config --json 'Plugins.Plugins.metric-export-plugin' '{
         "0.0.0.0:8432"
       ]
     },
-    "PopulatePrometheusInterval": 10
+    "PopulatePrometheusInterval": 10,
+    "EnableBitswapDiscoveryProbe": false
   }
 }'
 

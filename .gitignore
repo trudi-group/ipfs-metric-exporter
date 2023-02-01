@@ -1,1 +1,5 @@
+# Binaries produced via `make gen-out`.
 /out
+
+# Vim undo files
+*.un~

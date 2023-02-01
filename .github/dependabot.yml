@@ -26,3 +26,6 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    ignore:
+      # This is the kubo base image
+      - dependency-name: "ipfs/kubo"

@@ -82,17 +82,20 @@ type RPCAPI interface {
 	// Which request type to send is chosen by the capabilities of the remote
 	// peer.
 	// This is sent as one message, which is either sent completely or fails.
-	BroadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus
+	// An error is returned if Bitswap discovery is unavailable.
+	BroadcastBitswapWant(cids []cid.Cid) ([]BroadcastWantStatus, error)
 
 	// BroadcastBitswapCancel broadcasts CANCEL entries for the given CIDs to
 	// all connected peers that support Bitswap.
 	// This is sent as one message, which is either sent completely or fails.
-	BroadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus
+	// An error is returned if Bitswap discovery is unavailable.
+	BroadcastBitswapCancel(cids []cid.Cid) ([]BroadcastCancelStatus, error)
 
 	// BroadcastBitswapWantCancel broadcasts WANT_(HAVE|BLOCK) requests for the
 	// given CIDs, followed by CANCEL entries after a given time to all
 	// connected peers that support Bitswap.
-	BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus
+	// An error is returned if Bitswap discovery is unavailable.
+	BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) ([]BroadcastWantCancelStatus, error)
 
 	// SamplePeerMetadata returns information about seen/connected Peers.
 	// It returns information about all peers of the peerstore (including past
@@ -100,7 +103,7 @@ type RPCAPI interface {
 	// established connections.
 	// The onlyConnected parameter specifies whether data should be filtered
 	// for currently connected peers. This can be useful, as the size of the
-	// peerstore, and thus the metadata returned by this funciton, grows without
+	// peerstore, and thus the metadata returned by this function, grows without
 	// bound.
 	SamplePeerMetadata(onlyConnected bool) ([]PeerMetadata, int)
 }

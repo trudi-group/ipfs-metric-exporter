@@ -16,8 +16,10 @@ Building on bullseye gives us a libc version which is a bit older.
 This gives us compatibility with slightly older systems (e.g. Ubuntu LTS releases), at no loss of functionality.
 
 The [Dockerfile](./Dockerfile) implements kubo with the bundled plugin.
+Running `make gen-out` will build the image and extract the binaries for kubo and the plugin to `./out`.
 
-Running the command `make gen-out` will build the image and export the binaries for IPFS and the plugin to `./out`.
+You can run the binary and matching plugin locally, or via the modified kubo container.
+See [the configuration for our monitoring setup](./docker-compose/001_configure_ipfs.sh) for configuration and installation instructions.
 
 ### Manually
 
@@ -43,6 +45,38 @@ Manually, building with `go build -buildmode=plugin -o mexport.so` should also w
 This will produce a `mexport.so` library which needs to be placed in the IPFS plugin directory, which is
 `$IPFS_PATH/plugins` by default.
 
+## Updating
+
+Updating for a new version of kubo is usually simple:
+
+```
+# Update dependencies
+go get github.com/ipfs/kubo@<new version>
+
+# Do some housekeeping, I guess?
+go mod tidy
+go mod download
+go mod verify
+```
+
+Then update the version tags in the `Dockerfile`.
+
+If required, update the configuration scripts in `docker-compose/`.
+
+### Check
+
+To see if things work, first compile:
+```
+make gen-out
+```
+then run the monitoring setup locally:
+```
+cd docker-compose
+docker compose down --volumes
+docker compose up
+```
+and see if that works.
+
 ## Configuration
 
 This plugin can be configured using the usual IPFS configuration.
@@ -55,6 +89,7 @@ This plugin can be configured using the usual IPFS configuration.
         "Config": {
           "PopulatePrometheusInterval": 10,
           "AgentVersionCutOff": 20,
+          "EnableBitswapDiscoveryProbe": false,
           "AMQPServerAddress": "amqp://localhost:5672",
           "MonitorName": "<some name, defaults to hostname>"
           "HTTPServerConfig": {
@@ -82,6 +117,15 @@ The default is ten seconds.
 The plugin collects metrics about the agent versions of connected peers.
 This value configures a cutoff for how many agent version strings should be reported to prometheus.
 The remainder (everything that doesn't fit within the cutoff) is summed and reported as `others` to prometheus.
+
+### `EnableBitswapDiscoveryProbe`
+
+This controls whether active Bitswap discovery probing functionality should be made available.
+The way this works is through maintaining an active Bitswap stream to every connected peer.
+Discovery requests (i.e. `WANT_HAVE` or `WANT_BLOCK`, depending on whether the peer supports it) can then be broadcast to all connected peers.
+This does not use the usual Bitswap discovery code path, which allows us to _only_ search Bitswap, and not the DHT.
+
+For recent versions of the network and large monitoring nodes, this is too resource-intensive and should probably not be enabled.
 
 ### `AMQPServerAddress`
 

@@ -43,6 +43,10 @@ var (
 	// Implementing io.Closer causes the IPFS daemon to gracefully shut down
 	// our plugin.
 	_ io.Closer = (*MetricExporterPlugin)(nil)
+
+	// ErrBitswapProbeDisabled is returned for Bitswap probing API calls if
+	// the Bitswap probe is disabled via the plugin's configuration.
+	ErrBitswapProbeDisabled = errors.New("Bitswap probe not enabled")
 )
 
 var log = logging.Logger("metric-export")
@@ -64,18 +68,27 @@ type MetricExporterPlugin struct {
 }
 
 // BroadcastBitswapWant implements RPCAPI.
-func (mep *MetricExporterPlugin) BroadcastBitswapWant(cids []cid.Cid) []BroadcastWantStatus {
-	return mep.bitswapDiscoveryProbe.broadcastBitswapWant(cids)
+func (mep *MetricExporterPlugin) BroadcastBitswapWant(cids []cid.Cid) ([]BroadcastWantStatus, error) {
+	if mep.bitswapDiscoveryProbe == nil {
+		return nil, ErrBitswapProbeDisabled
+	}
+	return mep.bitswapDiscoveryProbe.broadcastBitswapWant(cids), nil
 }
 
 // BroadcastBitswapCancel implements RPCAPI.
-func (mep *MetricExporterPlugin) BroadcastBitswapCancel(cids []cid.Cid) []BroadcastCancelStatus {
-	return mep.bitswapDiscoveryProbe.broadcastBitswapCancel(cids)
+func (mep *MetricExporterPlugin) BroadcastBitswapCancel(cids []cid.Cid) ([]BroadcastCancelStatus, error) {
+	if mep.bitswapDiscoveryProbe == nil {
+		return nil, ErrBitswapProbeDisabled
+	}
+	return mep.bitswapDiscoveryProbe.broadcastBitswapCancel(cids), nil
 }
 
 // BroadcastBitswapWantCancel implements RPCAPI.
-func (mep *MetricExporterPlugin) BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) []BroadcastWantCancelStatus {
-	return mep.bitswapDiscoveryProbe.broadcastBitswapWantCancel(cids, secondsBetween)
+func (mep *MetricExporterPlugin) BroadcastBitswapWantCancel(cids []cid.Cid, secondsBetween uint) ([]BroadcastWantCancelStatus, error) {
+	if mep.bitswapDiscoveryProbe == nil {
+		return nil, ErrBitswapProbeDisabled
+	}
+	return mep.bitswapDiscoveryProbe.broadcastBitswapWantCancel(cids, secondsBetween), nil
 }
 
 // Ping implements RPCAPI.
@@ -145,6 +158,12 @@ type Config struct {
 	// AVs are somewhat arbitrarily chosen strings and clutter prometheus.
 	AgentVersionCutOff int `json:"AgentVersionCutOff"`
 
+	// Whether to enable the Bitswap discovery probe.
+	// This does not work on large monitoring nodes for recent versions of the
+	// network, because establishing and holding many Bitswap streams seems to
+	// be very resource-hungry.
+	EnableBitswapDiscoveryProbe bool `json:"EnableBitswapDiscoveryProbe"`
+
 	// The address of the AMQP server to send real-time data to.
 	// If this is empty, the real-time tracer will not be set up.
 	AMQPServerAddress string `json:"AMQPServerAddress"`
@@ -206,7 +225,11 @@ func (mep *MetricExporterPlugin) Init(env *plugin.Environment) error {
 	}
 
 	if len(pConf.AMQPServerAddress) == 0 {
-		log.Error("AMQPServerAddress is empty, will not start Bitswap tracer. Maybe you want to configure this?")
+		fmt.Println("AMQPServerAddress is empty, will not start Bitswap tracer. Maybe you want to configure this?")
+	}
+
+	if !pConf.EnableBitswapDiscoveryProbe {
+		fmt.Println("EnableBitswapDiscoveryProbe is false, Bitswap probing functionality will not be available.")
 	}
 
 	mep.conf = pConf
@@ -306,12 +329,14 @@ func (mep *MetricExporterPlugin) Start(ipfsInstance *core.IpfsNode) error {
 		return errors.New("could not get Bitswap network implementation")
 	}
 
-	// Create a bitswap bitswapDiscoveryProbe & subscribe to notifications in Bitswap &
-	// network.Network.
-	mep.bitswapDiscoveryProbe = NewProbe(ipfsInstance.PeerHost.Network(), bsnetImpl)
+	if mep.conf.EnableBitswapDiscoveryProbe {
+		// Create a bitswap bitswapDiscoveryProbe & subscribe to notifications in Bitswap &
+		// network.Network.
+		mep.bitswapDiscoveryProbe = NewProbe(ipfsInstance.PeerHost.Network(), bsnetImpl)
 
-	// Subscribe to network events.
-	ipfsInstance.PeerHost.Network().Notify(mep.bitswapDiscoveryProbe)
+		// Subscribe to network events.
+		ipfsInstance.PeerHost.Network().Notify(mep.bitswapDiscoveryProbe)
+	}
 
 	// Periodically populate Prometheus with metrics about peer counts.
 	if mep.conf.PopulatePrometheusInterval != 0 {
