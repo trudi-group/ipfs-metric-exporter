@@ -174,6 +174,65 @@ ipfs log level metric-export info
 ipfs log tail # or something else?
 ```
 
+## Prometheus Metrics
+
+The plugin adds additional metrics to the prometheus endpoint provided by the daemon.
+
+### Information About the Node
+
+These are always present.
+They track information about connectivity of the node, such as open streams or agent versions of connected peers.
+
+#### `plugin_metric_export_peers_supported_protocols`
+
+Sum of supported protocols over all currently connected peers, as reported by the kubo node.
+Labels: `protocol`
+
+#### `plugin_metric_export_peers_by_agent_version`
+
+Number of currently connected peers, distinguished by their agent_version.
+Labels: `agent_version`
+
+#### `plugin_metric_export_open_streams`
+
+Number of currently open streams, by protocol and direction, as reported by the kubo node.
+Labels: `protocol`, `direction`
+
+### Information About the Bitswap Discovery Probe
+
+These are only present if the Bitswap discovery probe is enabled, which is probably not the case on large monitoring nodes.
+The discovery probe maintains long-lived Bitswap senders to all connected peers.
+These metrics track the number of peers and connections tracked through the discovery probe, which maintains its state using connection events reported by the node, as well as the number of available Bitswap senders to use for probing.
+This is generally a bit out-of-sync with the real connectivity of the node.
+
+#### `plugin_metric_export_bitswap_senders`
+
+Number of available Bitswap senders to use by the discovery probe to send Bitswap messages.
+
+#### `plugin_metric_export_wiretap_peers`
+
+Number of connected peers tracked via the discovery probe, based on connection events reported by the kubo node.
+
+#### `plugin_metric_export_wiretap_connections`
+
+Number of connections tracked via the discovery probe, based on connection events reported by the kubo node.
+
+
+### Metrics About the Bitswap Wiretap
+
+These are only populated if the real-time Bitswap tracer is set up.
+They mostly track the performance of the tracer and pub/sub setup to RabbitMQ.
+
+#### `plugin_metric_export_wiretap_sent_bytes`
+
+Number of bytes processed by the Bitswap tracer to RabbitMQ, by pre/post compression.
+Labels: `compressed`
+
+#### `plugin_metric_export_wiretap_processed_events`
+
+Number of events processed by the Bitswap tracer, by whether they were dropped due to backpressure/slow connection to RabbitMQ.
+Labels: `dropped`
+
 ## Real-Time Monitoring via RabbitMQ
 
 This plugin pushes all messages it receives via Bitswap, as well as connection events, to a RabbitMQ server.
