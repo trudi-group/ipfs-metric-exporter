@@ -85,6 +85,10 @@ This is the [bitswap-monitoring-client](https://github.com/trudi-group/ipfs-tool
 It's running the image produced by [this Dockerfile](https://github.com/trudi-group/ipfs-tools/blob/master/Dockerfile.bitswap-monitoring-client).
 The configuration is in [monitoring_client_config.yaml](./monitoring_client_config.yaml).
 
+Because GeoIPUpdate updates the GeoIP databases regularly, you'd need to restart this sometimes to pick up the new database.
+It's unclear how often geolocation data changes and how necessary this is.
+The client is stateless, so restarting it should have minimal impact on the metrics.
+
 ### Monitoring Size Estimator
 
 This is the [monitoring-size-estimator](https://github.com/trudi-group/ipfs-tools/tree/master/monitoring-size-estimator).
