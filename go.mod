@@ -13,7 +13,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
-	github.com/rabbitmq/amqp091-go v1.8.0
+	github.com/rabbitmq/amqp091-go v1.8.1
 	go.uber.org/fx v1.18.2
 	go.uber.org/zap v1.24.0
 )
