@@ -3,8 +3,10 @@ package metricplugin
 import (
 	"time"
 
-	bsmsg "github.com/ipfs/go-bitswap/message"
-	pbmsg "github.com/ipfs/go-bitswap/message/pb"
+	"github.com/libp2p/go-libp2p/core/protocol"
+
+	bsmsg "github.com/ipfs/boxo/bitswap/message"
+	pbmsg "github.com/ipfs/boxo/bitswap/message/pb"
 	cid "github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -183,7 +185,7 @@ type PeerMetadata struct {
 	// A list of known supported protocols for this peer.
 	// If the peer is not currently connected, this information might be
 	// outdated.
-	Protocols []string `json:"protocols"`
+	Protocols []protocol.ID `json:"protocols"`
 
 	// Metadata about seen or connected peers, optional.
 

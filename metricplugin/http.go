@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	pbmsg "github.com/ipfs/go-bitswap/message/pb"
+	pbmsg "github.com/ipfs/boxo/bitswap/message/pb"
 	"github.com/ipfs/go-cid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/libp2p/go-libp2p/core/peer"
