@@ -1,6 +1,6 @@
 module github.com/trudi-group/ipfs-metric-exporter
 
-go 1.18
+go 1.20
 
 require (
 	github.com/ipfs/boxo v0.10.0
