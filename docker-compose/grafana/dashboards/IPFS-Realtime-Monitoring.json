@@ -154,7 +154,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "(avg(monitoring_size_estimator_hypergeom_size_estimate{protocol=\"\", agent_version=\"\"}) by (instance, job) +  monitoring_size_estimator_coupon_size_estimate{protocol=\"\",agent_version=\"\"})/2",
+          "expr": "(avg((monitoring_size_estimator_hypergeom_size_estimate{protocol=\"\", agent_version=\"\"} > 1)) by (instance, job) +  (monitoring_size_estimator_coupon_size_estimate{protocol=\"\",agent_version=\"\"}>1))/2",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -816,7 +816,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "monitoring_size_estimator_hypergeom_size_estimate{protocol=\"\",agent_version=\"\"}",
+          "expr": "monitoring_size_estimator_hypergeom_size_estimate{protocol=\"\",agent_version=\"\"} > 1",
           "legendFormat": "Hypergeometric Estimator, {{monitor_pair}}",
           "range": true,
           "refId": "A"
@@ -827,7 +827,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "monitoring_size_estimator_coupon_size_estimate{protocol=\"\",agent_version=\"\"}",
+          "expr": "monitoring_size_estimator_coupon_size_estimate{protocol=\"\",agent_version=\"\"} > 1",
           "hide": false,
           "legendFormat": "Coupon Collector Estimator",
           "range": true,
@@ -880,7 +880,7 @@
             "h": 15,
             "w": 24,
             "x": 0,
-            "y": 94
+            "y": 76
           },
           "id": 51,
           "options": {
@@ -941,7 +941,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -953,7 +954,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 109
+            "y": 91
           },
           "id": 4,
           "options": {
@@ -1034,7 +1035,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -1046,7 +1048,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 109
+            "y": 91
           },
           "id": 53,
           "options": {
@@ -1129,7 +1131,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -1141,7 +1144,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 117
+            "y": 99
           },
           "id": 59,
           "options": {
@@ -1246,7 +1249,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -1258,7 +1262,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 117
+            "y": 99
           },
           "id": 47,
           "options": {
@@ -1342,7 +1346,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               }
@@ -1353,7 +1358,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 125
+            "y": 107
           },
           "id": 70,
           "options": {
@@ -1436,7 +1441,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               }
@@ -1447,7 +1453,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 125
+            "y": 107
           },
           "id": 71,
           "options": {
@@ -1526,7 +1532,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -1538,7 +1545,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 133
+            "y": 115
           },
           "id": 57,
           "options": {
@@ -1616,7 +1623,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -1628,7 +1636,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 133
+            "y": 115
           },
           "id": 55,
           "options": {
@@ -1746,8 +1754,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1842,8 +1849,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1908,8 +1914,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -1974,8 +1979,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -2040,8 +2044,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -2930,7 +2933,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 84
+            "y": 79
           },
           "id": 63,
           "options": {
@@ -2991,7 +2994,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -3003,7 +3007,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 87
+            "y": 82
           },
           "id": 15,
           "options": {
@@ -3083,7 +3087,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3099,7 +3104,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 87
+            "y": 82
           },
           "id": 19,
           "options": {
@@ -3192,7 +3197,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3208,7 +3214,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 90
           },
           "id": 23,
           "options": {
@@ -3288,7 +3294,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -3300,7 +3307,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 90
           },
           "id": 17,
           "options": {
@@ -3381,7 +3388,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -3393,7 +3401,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 98
           },
           "id": 21,
           "options": {
@@ -3445,7 +3453,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               }
@@ -3456,7 +3465,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 98
           },
           "id": 13,
           "options": {
@@ -3538,7 +3547,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               }
@@ -3549,7 +3559,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 111
+            "y": 106
           },
           "id": 83,
           "options": {
