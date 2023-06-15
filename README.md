@@ -43,7 +43,7 @@ Updating for a new version of kubo is usually simple:
 
 ```
 # Update dependencies
-go get github.com/ipfs/kubo@<new version>
+go get -v github.com/ipfs/kubo@<new version>
 
 # Do some housekeeping, I guess?
 go mod tidy
