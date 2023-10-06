@@ -47,6 +47,9 @@ pushd ..
 git pull origin master
 popd
 
+# Build new version
+docker compose build
+
 # Load COMPOSE_PROJECT_NAME
 source .env
 

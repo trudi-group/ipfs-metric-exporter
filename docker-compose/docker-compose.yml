@@ -38,6 +38,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      prometheus:
+        condition: service_started
     links:
       - rabbitmq
       - prometheus
@@ -61,6 +63,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      prometheus:
+        condition: service_started
     links:
       - rabbitmq
       - prometheus

@@ -23,18 +23,10 @@ See [the configuration for our monitoring setup](./docker-compose/001_configure_
 
 ### Manually
 
-Due to a [bug in the Go compiler](https://github.com/cespare/xxhash/issues/54) it is not possible to build plugins
-correctly using Go 1.17.
-__You need to use Go 1.18 or later to build both this plugin and the IPFS binary.__
-
 This is an internal plugin, which needs to be built against the sources that produced the `ipfs` binary this plugin will
 plug into.
 __The `ipfs` binary and this plugin must be built from/against the same IPFS sources, using the same version of the Go
 compiler.__
-We build and run against kubo v0.17.0, using Go 1.19.
-You can build against either
-1. the official, online `kubo` source (and recompile IPFS) or
-2. a local fork, in which case you need to a `replace` directive to the `go.mod` file.
 
 There is a [Makefile](./Makefile) which does a lot of this for you.
 It respects the `IPFS_PATH` and `IPFS_VERSION` variables, which are otherwise set to sensible defaults.
@@ -51,7 +43,7 @@ Updating for a new version of kubo is usually simple:
 
 ```
 # Update dependencies
-go get github.com/ipfs/kubo@<new version>
+go get -v github.com/ipfs/kubo@<new version>
 
 # Do some housekeeping, I guess?
 go mod tidy

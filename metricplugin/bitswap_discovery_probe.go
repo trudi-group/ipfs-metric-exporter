@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	bsmsg "github.com/ipfs/go-bitswap/message"
-	pbmsg "github.com/ipfs/go-bitswap/message/pb"
-	bsnet "github.com/ipfs/go-bitswap/network"
+	bsmsg "github.com/ipfs/boxo/bitswap/message"
+	pbmsg "github.com/ipfs/boxo/bitswap/message/pb"
+	bsnet "github.com/ipfs/boxo/bitswap/network"
 	cid "github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"

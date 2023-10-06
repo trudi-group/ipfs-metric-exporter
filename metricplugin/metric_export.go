@@ -12,8 +12,8 @@ import (
 	"time"
 	"unsafe"
 
-	bs "github.com/ipfs/go-bitswap"
-	bsnet "github.com/ipfs/go-bitswap/network"
+	bs "github.com/ipfs/boxo/bitswap"
+	bsnet "github.com/ipfs/boxo/bitswap/network"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
 	"github.com/ipfs/kubo/core"
@@ -415,7 +415,7 @@ func (mep *MetricExporterPlugin) populatePrometheus(interval time.Duration) {
 
 		// ad (1): Sum supported protocols over connected peers.
 		before := time.Now()
-		protocolCounts := make(map[string]int)
+		protocolCounts := make(map[protocol.ID]int)
 
 		for _, peerID := range currentPeers {
 			// This returns a slice of strings instead of a slice of protocol.ID
@@ -434,7 +434,7 @@ func (mep *MetricExporterPlugin) populatePrometheus(interval time.Duration) {
 		log.Debugf("populatePrometheus: took %s to count supported protocols among %d peers: %+v", elapsed, len(currentPeers), protocolCounts)
 		supportedProtocolsAmongConnectedPeers.Reset()
 		for protocolID, count := range protocolCounts {
-			supportedProtocolsAmongConnectedPeers.With(prometheus.Labels{"protocol": protocolID}).Set(float64(count))
+			supportedProtocolsAmongConnectedPeers.With(prometheus.Labels{"protocol": string(protocolID)}).Set(float64(count))
 		}
 
 		// ad (2): Count agent versions of connected peers.
