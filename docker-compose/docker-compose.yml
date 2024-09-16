@@ -95,14 +95,21 @@ services:
 
   monitoring-client:
     image: "bitswap-monitoring-client:latest"
+    command:
+      - "--config"
+      - "./config/bitswap-monitoring-client-config.yaml"
     restart: unless-stopped
     expose:
       - 8088
     volumes:
       - ./monitoring_client_config.yaml:/ipfs-tools/config/bitswap-monitoring-client-config.yaml
       - geoip_data:/geoip
+     # Optional, if logging to disk is enabled in the config:
+     #- ./traces:/traces
     environment:
       - RUST_LOG=info
+      - PUID=1000
+      - PGID=1000
     links:
       - rabbitmq
       - prometheus

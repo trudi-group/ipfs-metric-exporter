@@ -13,6 +13,11 @@ geoip_database_path: "/geoip"
 # Defaults to empty, i.e., no tagging of gateway traffic.
 #gateway_file_path: "/usr/local/share/gateways.txt"
 
+# Specifies a path to a directory to write JSON logs.
+# A subdirectory per monitor will be created.
+# If not provided, logging to disk will be disabled.
+#disk_logging_directory: "/traces"
+
 # List of AMQP data sources to connect to.
 amqp_servers:
   # Address of the AMQP server, using amqp or amqps (TLS transport) scheme.
