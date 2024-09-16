@@ -269,7 +269,7 @@ func tracerSetup() interface{} {
 		// Add lifecycle stuff to shut down cleanly.
 		// TODO I don't think this works.
 		lc.Append(fx.Hook{
-			OnStop: func(ctx context.Context) error {
+			OnStop: func(_ context.Context) error {
 				tracer.Shutdown()
 				return nil
 			},
