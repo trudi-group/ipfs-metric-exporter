@@ -92,6 +92,11 @@ Because GeoIPUpdate updates the GeoIP databases regularly, you'd need to restart
 It's unclear how often geolocation data changes and how necessary this is.
 The client is stateless, so restarting it should have minimal impact on the metrics.
 
+The client can log messages to disk.
+For this, uncomment the `disk_logging_directory` field in the [monitoring_client_config.yaml](monitoring_client_config.yaml) configuration file.
+Also, mount the logging directory by uncommenting the `traces` mount in the `docker-compose.yml` file.
+The client changes ownership of the logging directory and log files to the values of `PUID` and `PGID`, configured via environment variables.
+
 ### Monitoring Size Estimator
 
 This is the [monitoring-size-estimator](https://github.com/trudi-group/ipfs-tools/tree/master/monitoring-size-estimator).
