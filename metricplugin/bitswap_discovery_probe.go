@@ -296,7 +296,7 @@ func (wt *BitswapDiscoveryProbe) broadcast(cids []cid.Cid, want bool, cancelAfte
 	workChan := make(chan peer.ID)
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func() {
 			defer wg.Done()
 
 			// We allocate and reuse one message to save strain on the GC.
@@ -318,7 +318,7 @@ func (wt *BitswapDiscoveryProbe) broadcast(cids []cid.Cid, want bool, cancelAfte
 
 				sendBroadcastSinglePeer(want, sender, cids, msg, logger, peerID, resultsChan, cancelAfterSeconds, cancelAfter, &wg)
 			}
-		}(i)
+		}()
 	}
 
 	// Feed work into workers
