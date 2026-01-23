@@ -35,6 +35,14 @@ services:
     build:
       context: ..
     restart: unless-stopped
+    environment:
+      - "GOMEMLIMIT=8GiB"
+      - "GOMAXPROCS=4"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: '8G'
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -60,6 +68,14 @@ services:
     build:
       context: ..
     restart: unless-stopped
+    environment:
+      - "GOMEMLIMIT=8GiB"
+      - "GOMAXPROCS=4"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: '8G'
     depends_on:
       rabbitmq:
         condition: service_healthy
