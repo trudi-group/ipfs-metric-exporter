@@ -6,7 +6,7 @@
 # We need go v1.18+ because of a weird compiler bug in 1.17.
 # Also, we want bullseye as the build environment in order to use a somewhat old libc.
 # This improves compatibility with older host systems at no loss of functionality.
-FROM golang:1.19-bullseye AS builder
+FROM golang:1.22-bullseye AS builder
 
 # First, get and compile kubo v0.21.0.
 # We need matching kubo and plugin executables, so it makes sense to build them together.
